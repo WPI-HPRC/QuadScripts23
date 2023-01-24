@@ -5,7 +5,7 @@ local copter_brake_mode_num = 2 -- need to get actual number for brake mode
 local battery_threshold = 12 -- need to get the actual battery threshold 
 local detach_servo_position = 10 -- need to get read number for this 
 local servo_release_output = 1000 -- need to get real number for this
-local servo_detatch_output = 1000 -- need to get real number for this 
+local servo_detach_output = 1000 -- need to get real number for this 
 local quad_accel_threshold = 9.8 -- do we want to use gravity or a lower number 
 local rc_start_switch = 1 -- get real value 
 local rc_start_channel = 1 -- get real value 
@@ -13,7 +13,7 @@ local rc_prerelease_switch = 2 -- get real value
 local rc_prerelease_channel = 2 -- get real value
 
 enum rocketStates = {
-    rocket_flight, prerelease, checking, ready, detatch, released, abort
+    rocket_flight, prerelease, checking, ready, detach, released, abort
 }
 local state = rocket_flight
 
@@ -51,12 +51,12 @@ end
 -- checks whether the drone is at the proper height to be dropped
 function ready()
     if location:alt() < target_drop_height then
-        state = detatch
+        state = detach
     end
 end 
 
--- detatches the quad by commanding the servo that releases the quad body
-function detatch()
+-- detaches the quad by commanding the servo that releases the quad body
+function detach()
     servo.set_output(servo_release_output, PWM) 
     if ahrs:get_accel() < quad_accel_threshold then
         state = released
@@ -89,8 +89,8 @@ function update()
         checking()
     elseif state = ready then 
         ready()
-    elseif state = detatch then 
-        detatch()
+    elseif state = detach then 
+        detach()
     elseif state = released then 
         released()
     else
