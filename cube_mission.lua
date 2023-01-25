@@ -49,11 +49,11 @@ function update()
 
     if arming:is_armed() and vehicle:get_mode() ~= AUTO_MODE then
         altitude = alt();  --this is different than defining alt in release script, should probably add additional if statements to set mode if not in auto mode
-        if altitude > 150000 then --make sure altitude units are correct (cm???)
+        if altitude > 15000 then --make sure altitude units are correct (cm???)
             target_vel:z(-2)
         end
 
-        if altitude <= 150000 then 
+        if altitude <= 15000 then 
             for i = 0,2 do 
 
                 set_output_pwm_chan_timeout(CUBE_SERVO_CHANNEL, CUBE_SERVO_ON_PWM, CUBE_SERVO_ON_TIMEOUT) --set servo to drop cube 1, after time does servo set to original value? 
