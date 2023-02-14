@@ -47,6 +47,11 @@ function checking()
     then
             --state = abort
             state = 0
+    --the following code is experimental for notification of second switch--
+    --else
+        --gcs:send_text(0,"Second Switch Ready")
+    --end
+    --elseif statement below would be changed to an if statement and else statement would be another abort 
     elseif rc:get_pwm(rc_prerelease_channel) == rc_prerelease_switch then
         --state = ready
         state = state + 1
@@ -82,7 +87,7 @@ function abort()
     vehicle:set_mode(copter_brake_mode_num) -- just don't do anything, abort if quad has not been released
 end
 
-function abort_free_fall()
+function abort_free_fall() --we still don't know what is going in here 
 
 end
 

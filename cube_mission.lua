@@ -56,7 +56,7 @@ function update()
         if altitude <= 15000 then 
             for i = 0,2 do 
 
-                set_output_pwm_chan_timeout(CUBE_SERVO_CHANNEL, CUBE_SERVO_ON_PWM, CUBE_SERVO_ON_TIMEOUT) --set servo to drop cube 1, after time does servo set to original value? 
+                SRV_Channels:set_output_pwm_chan_timeout(CUBE_SERVO_CHANNEL, CUBE_SERVO_ON_PWM, CUBE_SERVO_ON_TIMEOUT) --set servo to drop cube 1, after time does servo set to original value? 
 
                 offset_north = offsetNorth[i] --sets offset value according to array index
                 offset_east = offsetEast[i]
