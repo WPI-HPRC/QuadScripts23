@@ -12,6 +12,7 @@
 
 local altitude 
 local velocity 
+local acceleration 
 
 local target_drop_height = 500 -- random number that will get changed
 local copter_brake_mode_num = 2 -- need to get actual number for brake mode  
@@ -113,19 +114,17 @@ function update()
         --if necessary log data here- test if we need a command to 
         SRV_Channels:set_output_pwm_chan_timeout(channel, pwm, timeout)--set motors off, not sure if this is the most ideal command to use 
         altitude = alt()
-        velocity = gps:velocity()
+        acceleration = ahrs:get_accel()
 
+        --if statements that print stages based on data, not sure what those baselines are...
+        if acceleration > 0 then 
+            gcs:send_text(0, "Launch detected")
 
-        --if statements that print stages based on data 
-        --if something then 
-        --gcs:send_text(0, "Launch detected")
-        --elseif something then
-        --gcs:send_text(0, "Boost completed")
-        --elseif something then 
-        --gcs:send_text(0, "Apogee, begin descent")
-        --descent
-        --if descent detected then 
-            --run release script 
+        elseif acceleration > 0 then
+            gcs:send_text(0, "Boost completed")
+
+        elseif acceleration < 0 then 
+            gcs:send_text(0, "Apogee, begin descent")
             if not arming:is_armed() then 
                 state = 1 --1 is rocket_flight
             end
@@ -144,6 +143,7 @@ function update()
             else
                 abort() --state == 0
             end
-        --end
+        end
+
     end
 end 

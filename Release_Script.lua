@@ -10,8 +10,7 @@ local quad_accel_threshold = 9.8 -- do we want to use gravity or a lower number
 local rc_start_switch = 1 -- get real value 
 local rc_start_channel = 1 -- get real value 
 local rc_prerelease_switch = 2 -- get real value
-local rc_prerelease_channel = 2 -- get real value
-
+local rc_prerelease_channel = 2 -- get real values 
 local state = 1
 --enum rocketStates = {
     --rocket_flight, prerelease, checking, ready, detach, released, abort
@@ -61,7 +60,7 @@ end
 
 -- checks whether the drone is at the proper height to be dropped
 function ready()
-    if location:alt() < target_drop_height then
+    if location:alt() < target_drop_height then -- this may need to be changed 
         --state = detach
         state = state + 1
     end
