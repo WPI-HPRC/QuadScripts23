@@ -5,8 +5,8 @@
 local flight_distance = 10
 local current_location
 local state = 0
-local copter_land_mode_num = 9
-local AUTO_MODE = 3
+local copter_land_mode_num = 5
+local AUTO_MODE = 6
 
 function update()
 
