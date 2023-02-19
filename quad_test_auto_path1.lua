@@ -5,12 +5,12 @@
 local flight_distance = 10
 local current_location
 local state = 0
-local copter_land_mode_num = 5
-local AUTO_MODE = 6
+local copter_land_mode_num = 9
+local START_MODE = 16
 
 function update()
 
-    if arming:is_armed() and vehicle:get_mode() ~= AUTO_MODE then
+    if arming:is_armed() and vehicle:get_mode() == START_MODE then
         
         if state == 0 then
             --compare distance code to square reference, may need to declare further varibles 
@@ -38,8 +38,8 @@ function update()
         elseif state == 3 then
             vehicle:set_mode(copter_land_mode_num)
         end
-        return update, 1000 
     end
+    return update, 1000 
 end
 
 return update()
