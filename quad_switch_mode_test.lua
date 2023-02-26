@@ -14,8 +14,8 @@ function update()
        -- vehicle:set_mode(copter_loiter_num)
     --end
 
-    altitude = alt() 
-    gcs:send_text(0, string.format("Altitude", altitude))
+    altitude = ahrs:alt() 
+    gcs:send_text(0, string.format("Altitude:%.1f", altitude))
 
     --if rc:get_pwm(rc_mode) >= rc_position_hold then
     if altitude <= alt_switch then 

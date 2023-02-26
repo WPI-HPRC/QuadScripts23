@@ -11,7 +11,7 @@ local rc_start_switch = 1 -- get real value
 local rc_start_channel = 1 -- get real value 
 local rc_prerelease_switch = 2 -- get real value
 local rc_prerelease_channel = 2 -- get real values 
-local state = 1
+local state
 --enum rocketStates = {
     --rocket_flight, prerelease, checking, ready, detach, released, abort
 --}
@@ -86,31 +86,33 @@ function abort()
     vehicle:set_mode(copter_brake_mode_num) -- just don't do anything, abort if quad has not been released
 end
 
-function abort_free_fall() --we still don't know what is going in here 
+--function abort_free_fall() --we still don't know what is going in here 
 
-end
+--end
 
 -- main update function called by framework, controls the states of the drone
 function update()
 
-    if not arming:is_armed() then 
+    if arming:is_armed() then --bit confused as to why this is here 
         state = 1 --1 is rocket_flight
+
+        if state == 1 then 
+            rocket_flight()
+        elseif state == 2 then --2 is prerelease
+            prerelease()
+        elseif state == 3 then --3 is checking
+            checking()
+        elseif state == 4 then --4 is ready
+            ready()
+        elseif state == 5 then --5 is detach 
+            detach()
+        elseif state == 6 then --6 is released
+            released()
+        else
+            abort() --state == 0
+        end
     end
-    if state == 1 then 
-        rocket_flight()
-    elseif state == 2 then --2 is prerelease
-        prerelease()
-    elseif state == 3 then --3 is checking
-        checking()
-    elseif state == 4 then --4 is ready
-        ready()
-    elseif state == 5 then --5 is detach 
-        detach()
-    elseif state == 6 then --6 is released
-        released()
-    else
-        abort() --state == 0
-    end
+    return update, 1000 
 end
 
 return update()

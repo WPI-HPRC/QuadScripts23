@@ -14,7 +14,7 @@ local rc_mode = 7
   
 function update()
 
-    if rc:get_pwm(rc_mode) >= rc_position_hold then
+    --if rc:get_pwm(rc_mode) >= rc_position_hold then
             
         if state == 0 then
             --compare distance code to square reference, may need to declare further varibles 
@@ -47,7 +47,7 @@ function update()
             --vehicle:set_mode(copter_land_mode_num)
             gcs:send_text("Landing Now")
         end
-    end
+    --end
     return update, 1000 
 end
     

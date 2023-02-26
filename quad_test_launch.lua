@@ -11,7 +11,7 @@
     --Log these changes 
 
 local altitude 
-local velocity 
+local velocity = Vector3f()
 local acceleration 
 
 local target_drop_height = 500 -- random number that will get changed
@@ -26,7 +26,7 @@ local rc_start_channel = 1 -- get real value
 local rc_prerelease_switch = 2 -- get real value
 local rc_prerelease_channel = 2 -- get real value
 
-local state = 1
+local state 
 --need to check position of print statements 
 function rocket_flight()
     if rc:get_pwm(rc_start_channel) == rc_start_switch then
@@ -57,15 +57,18 @@ function checking()
     then
             --state = abort
             state = 0
-    --the following code is experimental for notification of second switch--
-    --else
-        --gcs:send_text(0,"Second Switch Ready")
-    --end
-    --elseif statement below would be changed to an if statement and else statement would be another abort 
-    elseif rc:get_pwm(rc_prerelease_channel) == rc_prerelease_switch then
+    --the following code is experimental for notification of second switch, look at release script for original--
+    else
+        gcs:send_text(0,"Second Switch Ready")
+    end
+    
+    if rc:get_pwm(rc_prerelease_channel) == rc_prerelease_switch then
         --state = ready
         state = state + 1
         gcs:send_text(0, "Checking Stage")
+
+    else
+        state = 0 --abort 
     end 
     
 end
@@ -103,7 +106,7 @@ function abort()
 end
 
 function abort_free_fall() --we still don't know what is going in here 
-
+    gcs:send_text(0, "Abort Free Fall")
 end
 
 function update()
@@ -114,20 +117,21 @@ function update()
         --if necessary log data here- test if we need a command to 
         SRV_Channels:set_output_pwm_chan_timeout(channel, pwm, timeout)--set motors off, not sure if this is the most ideal command to use 
         altitude = alt()
-        acceleration = ahrs:get_accel()
+        acceleration = ahrs:get_accel() 
+        velocity = ahrs:get_velocity_NED() 
+        local vertical_velocity = velocity:z()
+        state = 1 --1 is rocket_flight
 
         --if statements that print stages based on data, not sure what those baselines are...
         if acceleration > 0 then 
             gcs:send_text(0, "Launch detected")
 
-        elseif acceleration > 0 then
-            gcs:send_text(0, "Boost completed")
+        elseif acceleration < 0 then
+            gcs:send_text(0, "Motor Burnout")
 
-        elseif acceleration < 0 then 
-            gcs:send_text(0, "Apogee, begin descent")
-            if not arming:is_armed() then 
-                state = 1 --1 is rocket_flight
-            end
+        elseif vertical_velocity <= 0 then 
+            gcs:send_text(0, "Apogee, begin descent and start release sequence")
+       
             if state == 1 then 
                 rocket_flight()
             elseif state == 2 then --2 is prerelease
@@ -143,7 +147,10 @@ function update()
             else
                 abort() --state == 0
             end
-        end
 
+        end  
     end
+    return update, 1000
 end 
+
+return update()

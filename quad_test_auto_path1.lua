@@ -14,7 +14,7 @@ function update()
         
         if state == 0 then
             --compare distance code to square reference, may need to declare further varibles 
-            current_location = ahrs.get_location()
+            current_location = ahrs:get_location()
             if current_location then
                 local start_location = current_location
                 state = state + 1
