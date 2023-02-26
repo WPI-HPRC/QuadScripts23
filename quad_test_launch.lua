@@ -42,7 +42,7 @@ function prerelease()
         --state = abort
         state = 0 --should there be an abort stage for every state? 
     else 
-        servo.set_output(servo_release_output, PWM)
+        servo:set_output(servo_release_output, PWM)
         --state = checking
         state = state + 1
         gcs:send_text(0, "Pre-release Stage")
@@ -84,7 +84,7 @@ end
 
 -- detaches the quad by commanding the servo that releases the quad body
 function detach()
-    servo.set_output(servo_release_output, PWM) 
+    servo:set_output(servo_release_output, PWM) 
     if ahrs:get_accel() < quad_accel_threshold then
         --state = released
         state = state + 1
@@ -105,9 +105,9 @@ function abort()
     gcs:send_text(0, "Abort")
 end
 
-function abort_free_fall() --we still don't know what is going in here 
-    gcs:send_text(0, "Abort Free Fall")
-end
+--function abort_free_fall() --we still don't know what is going in here 
+    --gcs:send_text(0, "Abort Free Fall")
+--end
 
 function update()
     if not arming:is_armed() or not vehicle:get_mode() ~= AUTO_MODE then --check logic 
