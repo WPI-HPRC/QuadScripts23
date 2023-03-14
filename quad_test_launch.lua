@@ -10,7 +10,7 @@
     --Detect second switch, MAKE SURE THERE IS A WAY FOR CAM TO KNOW WHEN TO FLIP THE SWITCH- use print statement
     --Log these changes 
 
-local altitude 
+local altitude = Location()
 local velocity = Vector3f()
 local acceleration 
 
