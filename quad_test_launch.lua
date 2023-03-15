@@ -12,7 +12,7 @@
 
 local altitude = Location()
 local velocity = Vector3f()
-local acceleration 
+local acceleration = Vector3f_ud() 
 
 local target_drop_height = 500 -- random number that will get changed
 local copter_brake_mode_num = 2 -- need to get actual number for brake mode  
@@ -112,43 +112,50 @@ end
 function update()
     if not arming:is_armed() or not vehicle:get_mode() ~= AUTO_MODE then --check logic 
         vehicle:set_mode(AUTO_MODE)
+        arming:arm() -- test to see if we can arm through software 
 
     elseif arming:is_armed() and vehicle:get_mode() ~= AUTO_MODE then
         --if necessary log data here- test if we need a command to 
         SRV_Channels:set_output_pwm_chan_timeout(channel, pwm, timeout)--set motors off, not sure if this is the most ideal command to use 
         altitude = alt()
-        acceleration = ahrs:get_accel() 
+        acceleration = ahrs:get_accel()
         velocity = ahrs:get_velocity_NED() 
         local vertical_velocity = velocity:z()
         state = 1 --1 is rocket_flight
 
-        --if statements that print stages based on data, not sure what those baselines are...
-        if acceleration > 0 then 
-            gcs:send_text(0, "Launch detected")
+        if acceleration and vertical_velocity and altitude then 
 
-        elseif acceleration < 0 then
-            gcs:send_text(0, "Motor Burnout")
+            
 
-        elseif vertical_velocity <= 0 then 
-            gcs:send_text(0, "Apogee, begin descent and start release sequence")
-       
-            if state == 1 then 
-                rocket_flight()
-            elseif state == 2 then --2 is prerelease
-                prerelease()
-            elseif state == 3 then --3 is checking
-                checking()
-            elseif state == 4 then --4 is ready
-                ready()
-            elseif state == 5 then --5 is detach 
-                detach()
-            elseif state == 6 then --6 is released
-                released()
-            else
-                abort() --state == 0
-            end
+            --if statements that print stages based on data, not sure what those baselines are...
+            if acceleration > 0 then 
+                gcs:send_text(0, "Launch detected")
 
-        end  
+            elseif acceleration < 0 then --check signs since drone is upsidedown 
+                gcs:send_text(0, "Motor Burnout")
+            end 
+
+            if vertical_velocity <= 0 then --also check signs here 
+                gcs:send_text(0, "Apogee, begin descent and start release sequence")
+        
+                if state == 1 then 
+                    rocket_flight()
+                elseif state == 2 then --2 is prerelease
+                    prerelease()
+                elseif state == 3 then --3 is checking
+                    checking()
+                elseif state == 4 then --4 is ready
+                    ready()
+                elseif state == 5 then --5 is detach 
+                    detach()
+                elseif state == 6 then --6 is released
+                    released()
+                else
+                    abort() --state == 0
+                end
+
+            end 
+        end 
     end
     return update, 1000
 end 
