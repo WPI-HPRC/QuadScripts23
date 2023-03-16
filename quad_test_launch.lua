@@ -75,7 +75,7 @@ end
 
 -- checks whether the drone is at the proper height to be dropped
 function ready()
-    if location:alt() < target_drop_height then
+    if altitude:alt() < target_drop_height then
         --state = detach
         state = state + 1
         gcs:send_text(0, "Ready Stage")
@@ -84,7 +84,7 @@ end
 
 -- detaches the quad by commanding the servo that releases the quad body
 function detach()
-    servo:set_output(servo_release_output, PWM) 
+    --servo:set_output(servo_release_output, PWM) this might throw an error during launch 
     if ahrs:get_accel() < quad_accel_threshold then
         --state = released
         state = state + 1
@@ -111,8 +111,9 @@ end
 
 function update()
     if not arming:is_armed() or not vehicle:get_mode() ~= AUTO_MODE then --check logic 
+        arming:arm()
         vehicle:set_mode(AUTO_MODE)
-        arming:arm() -- test to see if we can arm through software 
+         -- test to see if we can arm through software 
 
     elseif arming:is_armed() and vehicle:get_mode() ~= AUTO_MODE then
         --if necessary log data here- test if we need a command to 
@@ -124,8 +125,6 @@ function update()
         state = 1 --1 is rocket_flight
 
         if acceleration and vertical_velocity and altitude then 
-
-            
 
             --if statements that print stages based on data, not sure what those baselines are...
             if acceleration > 0 then 
