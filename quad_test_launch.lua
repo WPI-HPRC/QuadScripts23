@@ -42,7 +42,7 @@ function prerelease()
         --state = abort
         state = 0 --should there be an abort stage for every state? 
     else 
-        servo:set_output(servo_release_output, PWM)
+        --servo:set_output(servo_release_output, PWM) may cause errors since no values 
         --state = checking
         state = state + 1
         gcs:send_text(0, "Pre-release Stage")
@@ -118,7 +118,7 @@ function update()
     elseif arming:is_armed() and vehicle:get_mode() ~= AUTO_MODE then
         --if necessary log data here- test if we need a command to 
         SRV_Channels:set_output_pwm_chan_timeout(channel, pwm, timeout)--set motors off, not sure if this is the most ideal command to use 
-        altitude = alt()
+        altitude = location:alt()
         acceleration = ahrs:get_accel()
         velocity = ahrs:get_velocity_NED() 
         local vertical_velocity = velocity:z()
