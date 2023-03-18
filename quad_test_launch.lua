@@ -9,6 +9,7 @@
     --Run release checks (check for mode but not imperative)
     --Detect second switch, MAKE SURE THERE IS A WAY FOR CAM TO KNOW WHEN TO FLIP THE SWITCH- use print statement
     --Log these changes 
+
 local roll
 --local velocity = Vector3f()
 --local acceleration = Vector3f_ud() --says Vector3f_ud() in the docs so might be an issue, try with this first 
@@ -38,7 +39,7 @@ function rocket_flight()
         state = state + 1
         gcs:send_text(0, "Switching stages")
     end
-    return
+    return state 
 end
 
 -- releases the arms and waits for second signal
@@ -57,7 +58,7 @@ function prerelease()
     else
         state = 0
     end
-    return
+    return state
 end
 
 -- checks battery voltage, rc connection, and GPS lock before moving to the next state
@@ -82,7 +83,7 @@ function checking()
     else
         state = 0 --abort 
     end 
-    return
+    return state 
     
 end
 
@@ -102,7 +103,7 @@ function ready()
         end
         --gcs:send_text(5, string.format("Altitude: %.1f", altitude))
     end
-    return
+    return state 
     
 end 
 
@@ -118,7 +119,7 @@ function detach()
         state = state + 1
         gcs:send_text(0, "Switching stages")
     --end
-    return
+    return state 
 end
 
 -- quad performs stabilization after entering free fall
@@ -143,7 +144,7 @@ function released()
             end
         end
     end
-    return
+    return 
 end
 
 -- code will end up here if something's gone terribly wrong (but it won't)
@@ -160,7 +161,7 @@ function abort()
             arming:disarm()
         end
     end
-    return
+    return  
 end
 
 --function abort_free_fall() --we still don't know what is going in here 
