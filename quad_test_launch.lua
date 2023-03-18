@@ -144,7 +144,7 @@ function released()
             end
         end
     end
-    return 
+    return
 end
 
 -- code will end up here if something's gone terribly wrong (but it won't)
@@ -161,7 +161,7 @@ function abort()
             arming:disarm()
         end
     end
-    return  
+    return
 end
 
 --function abort_free_fall() --we still don't know what is going in here 
