@@ -64,24 +64,24 @@ end
 -- checks battery voltage, rc connection, and GPS lock before moving to the next state
 function checking()
     gcs:send_text(0, "Checking Stage")
-    if -- battery:voltage(instance) < battery_threshold or
+    --if -- battery:voltage(instance) < battery_threshold or
         --rc:has_valid_input() == false or -- do we need this cuz it would throw an error anyway (Ask Cam)
-        gps:status(instance) == GPS.NO_GPS -- just to make sure that you have a GPS lock  
-    then
+        --gps:status(instance) == GPS.NO_GPS -- just to make sure that you have a GPS lock  
+    --then
             --state = abort
-            state = 0
+            --state = 0
     --the following code is experimental for notification of second switch, look at release script for original--
-    else
+    --else
         gcs:send_text(0,"FLIP SWITCH C")
-    end
+    --end
     
     if rc:get_pwm(rc_prerelease_channel) >= rc_prerelease_switch then
         --state = ready
         state = state + 1
         gcs:send_text(0, "Switching stages")
 
-    else
-        state = 0 --abort 
+    --else
+        --state = 0 --abort 
     end 
     return state 
     
