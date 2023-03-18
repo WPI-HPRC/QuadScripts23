@@ -113,9 +113,9 @@ function detach()
     --servo:set_output(servo_release_output, PWM) this might throw an error during launch 
     --if ahrs:get_accel() < quad_accel_threshold then
         --state = released
-        if not arming:is_armed() then
-            arming:arm()
-        end
+        --if not arming:is_armed() then
+           -- arming:arm()
+        --end
         state = state + 1
         gcs:send_text(0, "Switching stages")
     --end
@@ -127,12 +127,12 @@ function released()
     -- throw mode part 
     -- descends to 500 feet 
     gcs:send_text(0, "Released Stage")
+    vehicle:set_mode(THROW_MODE)
+
     if not arming:is_armed() then
         arming:arm()
-    
-    else
-        vehicle:set_mode(THROW_MODE)
-
+    end
+   -- else
         if ahrs:healthy() then --make sure a home is set 
             local home = ahrs:get_home()
             local home_alt = home:alt()
@@ -141,10 +141,11 @@ function released()
             local final_alt = altitude - home_alt
             if final_alt < 12192 then --needs to correct for location 
                 arming:disarm()
+                state = state + 1
             end
         end
-    end
-    return
+    --end
+    return state 
 end
 
 -- code will end up here if something's gone terribly wrong (but it won't)
@@ -213,6 +214,8 @@ function update()
                     detach()
                 elseif state == 6 then --6 is released
                     released()
+                elseif state == 7 then
+                    gcs:send_text(0, "Routine finished")
                 else
                     abort() --state == 0
                 end
