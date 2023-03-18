@@ -45,7 +45,7 @@ end
 function prerelease()
     gcs:send_text(0, "Pre-release Stage")
     if not arming:is_armed() then
-        vehicle:arm()
+        arming:arm()
         --state = abort
         --state = 0 --should there be an abort stage for every state? 
 
@@ -113,7 +113,7 @@ function detach()
     --if ahrs:get_accel() < quad_accel_threshold then
         --state = released
         if not arming:is_armed() then
-            vehicle:arm()
+            arming:arm()
         end
         state = state + 1
         gcs:send_text(0, "Switching stages")
@@ -127,7 +127,7 @@ function released()
     -- descends to 500 feet 
     gcs:send_text(0, "Released Stage")
     if not arming:is_armed() then
-        vehicle:arm()
+        arming:arm()
     
     else
         vehicle:set_mode(THROW_MODE)
@@ -139,7 +139,7 @@ function released()
             local altitude = position:alt()
             local final_alt = altitude - home_alt
             if final_alt < 12192 then --needs to correct for location 
-                vehicle:disarm()
+                arming:disarm()
             end
         end
     end
@@ -157,7 +157,7 @@ function abort()
         local altitude = position:alt()
         local final_alt = altitude - home_alt
         if final_alt < 12192 then --needs to correct for location 
-            vehicle:disarm()
+            arming:disarm()
         end
     end
     return
@@ -221,5 +221,12 @@ function update()
     end
     return update, 1000
 end 
+
+rocket_flight()
+prerelease()
+checking()
+ready()
+detach()
+released()
 
 return update()
