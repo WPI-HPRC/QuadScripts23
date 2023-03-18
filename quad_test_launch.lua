@@ -29,7 +29,7 @@ local rc_start_channel = 8 -- get real value
 local rc_prerelease_switch = 1500 -- get real value
 local rc_prerelease_channel = 7 -- get real value
 
-local state 
+local state = 1
 --need to check position of print statements 
 function rocket_flight()
     gcs:send_text(0, "Rocket Flight Stage")
@@ -179,7 +179,7 @@ function update()
         --SRV_Channels:set_output_pwm_chan_timeout(channel, pwm, timeout)--set motors off, not sure if this is the most ideal command to use 
         local acceleration = ahrs:get_accel():z()
         local velocity = ahrs:get_velocity_NED() 
-        state = 1 --1 is rocket_flight
+        --state = 1 --1 is rocket_flight
 
         --returns orientation 
         roll = math.deg(ahrs:get_roll())
