@@ -62,6 +62,9 @@ function rocket_flight()
         if rc:get_pwm(rc_start_channel) >= rc_start_switch then
             gcs:send_text(0, "Switching stages")
             state = state + 1 --switch state to arm_release
+
+        else
+            state = 0; --abort
             
         end
     end
@@ -133,6 +136,9 @@ function ready()
         if final_alt < target_drop_height and armSuccess == true then 
             state = state + 1 --Switches into detach state
             gcs:send_text(0, "Switching stages")
+
+        else
+            state = 0; --abort
         end
         --gcs:send_text(5, string.format("Altitude: %.1f", altitude))
     end
@@ -154,6 +160,9 @@ function detach()
        
         gcs:send_text(0, "Switching stages") 
         state = state + 1
+
+    else
+        state = 0 --abort
 
     end     
 
@@ -178,7 +187,11 @@ function released()
             if final_alt < 12192 then -- This will need to be changed once cube mission incorporated 
                 state = state + 1 --once cube mission integrated, this will switch the into another state that begins the cube mission
             end
+
+        else
+            state = 10; 
         end
+    
     end
     return state 
 end
@@ -193,6 +206,8 @@ end
 -- Secondary Abort: abort state if the drone is in free fall or during cube mission
 function secondary_abort() 
     gcs:send_text(0, "Secondary Abort")
+    vehicle:set_mode(BRAKE_MODE)
+    --delay
     vehicle:set_mode(LAND_MODE)
     return state 
 
