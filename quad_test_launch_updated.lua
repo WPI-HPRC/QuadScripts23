@@ -20,10 +20,12 @@ local servo_detach_output = 1000 -- need to get real number for this
 --RC Values--
 local rc_script_start_switch = 1200
 local rc_script_start_channel = 11
-local rc_start_switch = 1500 -- get real value 
-local rc_start_channel = 8 -- get real value 
-local rc_arm_release_switch = 1500 -- get real value
-local rc_arm_release_channel = 7 -- get real value
+local rc_start_switch = 1500 
+local rc_start_channel = 8  
+local rc_arm_release_switch = 1500 
+local rc_arm_release_channel = 7 
+local rc_state_reset_switch = 1500 
+local rc_state_reset_channel = 0 -- get real value
 
 --Servo Values--
 
@@ -70,7 +72,7 @@ end
 function arm_release()
     gcs:send_text(0, "Pre-release Stage")
     servo:set_output(servo_release_output, PWM) --Drops arms
-    if button pressed || rc switch flipped then --edit to reflect, add camera stuff 
+    if button pressed || camera rc switch flipped then --edit to reflect, add camera stuff 
         gcs:send_text(0, "Switching stages")
         state = state + 1 --switch state to checking
 
@@ -173,7 +175,7 @@ function released()
             local position = ahrs:get_position()
             local altitude = position:alt()
             local final_alt = altitude - home_alt
-            if final_alt < 12192 then 
+            if final_alt < 12192 then -- This will need to be changed once cube mission incorporated 
                 state = state + 1 --once cube mission integrated, this will switch the into another state that begins the cube mission
             end
         end
@@ -196,7 +198,7 @@ function secondary_abort()
 
 end
 
-function update()--need to add a reset switch 
+function update()
 
     if not vehicle:get_mode() == THROW_MODE then
         vehicle:set_mode(THROW_MODE) 
@@ -204,6 +206,9 @@ function update()--need to add a reset switch
 
     elseif rc:get_pwm(rc_script_start_channel) >= rc_script_start_switch and vehicle:get_mode() == THROW_MODE then --check syntax
 
+        if rc:get_pwm(rc_state_reset_channel) >= rc_state_reset_switch then --reset switch 
+            state = 1; 
+        end
 
         --Returns orientation-- 
         roll = math.deg(ahrs:get_roll())
