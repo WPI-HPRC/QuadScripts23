@@ -70,7 +70,7 @@ end
 function arm_release()
     gcs:send_text(0, "Pre-release Stage")
     servo:set_output(servo_release_output, PWM) --Drops arms
-    if button pressed then --edit to reflect, add camera stuff 
+    if button pressed || rc switch flipped then --edit to reflect, add camera stuff 
         gcs:send_text(0, "Switching stages")
         state = state + 1 --switch state to checking
 
@@ -83,7 +83,7 @@ end
 -- Checking: checks battery voltage, rc connection, and GPS lock 
 --and waits for pilot command before moving to the next state
 
---Whether or not we have additional tests here depends on testing 
+--Whether or not we have tests here depends on testing 
 function checking()
     gcs:send_text(0, "Checking Stage")
     if battery:voltage(instance) < battery_threshold or
@@ -184,24 +184,15 @@ end
 -- Initial Abort: code will end up here if something's gone terribly wrong (but it won't)
 function initial_abort()
     gcs:send_text(0, "Initial Abort")
-    vehicle:set_mode(BRAKE_MODE) -- just don't do anything, abort if quad has not been released
-    if ahrs:healthy() then --make sure a home is set 
-        local home = ahrs:get_home()
-        local home_alt = home:alt()
-        local position = ahrs:get_position()
-        local altitude = position:alt()
-        local final_alt = altitude - home_alt
-        if final_alt < 12192 then --needs to correct for location 
-            arming:disarm()
-        end
-    end
-    return
+    arming:disarm()
+    return state 
 end
 
 -- Secondary Abort: abort state if the drone is in free fall or during cube mission
 function secondary_abort() 
     gcs:send_text(0, "Secondary Abort")
     vehicle:set_mode(LAND_MODE)
+    return state 
 
 end
 
