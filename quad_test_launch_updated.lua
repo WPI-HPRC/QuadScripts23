@@ -2,100 +2,134 @@
 
 --Add description here
 
-
-local roll
---local velocity = Vector3f()
---local acceleration = Vector3f_ud() --says Vector3f_ud() in the docs so might be an issue, try with this first 
-
-local target_drop_height = 15240 --500ft expressed in cm 
-
 local BRAKE_MODE = 17 
 local AUTO_MODE = 3
 local THROW_MODE = 18
+local LAND_MODE = 0 --find value 
 
-local battery_threshold = 12 -- need to get the actual battery threshold 
+--Threshold Constants--
+local target_drop_height = 15240 --500ft expressed in cm 
+local battery_threshold = 12 -- need to get the actual battery threshold and decide if we are using it as a check 
+local quad_accel_threshold = 9.8 -- do we want to use gravity or a lower number 
+
 local detach_servo_position = 10 -- need to get reaL number for this 
 local servo_release_output = 1000 -- need to get real number for this
 local servo_detach_output = 1000 -- need to get real number for this 
-local quad_accel_threshold = 9.8 -- do we want to use gravity or a lower number 
+
 
 --RC Values--
 local rc_script_start_switch = 1200
 local rc_script_start_channel = 11
 local rc_start_switch = 1500 -- get real value 
 local rc_start_channel = 8 -- get real value 
-local rc_prerelease_switch = 1500 -- get real value
-local rc_prerelease_channel = 7 -- get real value
+local rc_arm_release_switch = 1500 -- get real value
+local rc_arm_release_channel = 7 -- get real value
 
+--Servo Values--
+
+--General Declarations--
+local roll
+--local velocity = Vector3f()
+--local acceleration = Vector3f_ud() --says Vector3f_ud() in the docs so might be an issue, try with this first 
 local state = 1
 
---Rocket Flight: exists in current state until Apogee then switches to prerelease when RC switch triggered--
+--Rocket Flight: exists in current state until Apogee then switches to arm_release when RC switch triggered--
 function rocket_flight()
+
     gcs:send_text(0, "Rocket Flight Stage")
-    if rc:get_pwm(rc_start_channel) >= rc_start_switch then
-        state = state + 1 --switch state to prerelease
-        gcs:send_text(0, "Switching stages")
+
+    --Gets acceleration, velocity--
+    local acceleration = ahrs:get_accel():z()
+    local velocity = ahrs:get_velocity_NED() 
+
+    if acceleration and velocity then 
+
+        --if statements that print stages based on data, not sure what those baselines are...
+        if acceleration > 0 then --Find way to only print once
+            gcs:send_text(0, "Launch detected")
+
+        elseif acceleration < 0 then --check signs since drone is upsidedown 
+            gcs:send_text(0, "Motor Burnout")
+        end 
+
+        if velocity:z() <= 0 then --check that this is instantaneous velocity
+            --think the problem with the stages was due to velocity updating
+            gcs:send_text(0, "Apogee, begin descent and start release sequence")
+        end
+
+        if rc:get_pwm(rc_start_channel) >= rc_start_switch then
+            gcs:send_text(0, "Switching stages")
+            state = state + 1 --switch state to arm_release
+            
+        end
     end
     return state 
 end
 
--- releases the arms and waits for second signal
-function prerelease()
+-- Arm-release: drops the arms from the retention system and waits for second signal either from button or rc to switch states
+function arm_release()
     gcs:send_text(0, "Pre-release Stage")
-    if not arming:is_armed() then
-        arming:arm()
-        --state = abort
-        --state = 0 --should there be an abort stage for every state? 
-
-        --servo:set_output(servo_release_output, PWM) may cause errors since no values, drops arms
-        --state = checking
-        state = state + 1
+    servo:set_output(servo_release_output, PWM) --Drops arms
+    if button pressed then --edit to reflect, add camera stuff 
         gcs:send_text(0, "Switching stages")
+        state = state + 1 --switch state to checking
 
     else
-        state = 0
+        state = 0 --abort
     end
     return state
 end
 
--- checks battery voltage, rc connection, and GPS lock before moving to the next state
+-- Checking: checks battery voltage, rc connection, and GPS lock 
+--and waits for pilot command before moving to the next state
+
+--Whether or not we have additional tests here depends on testing 
 function checking()
     gcs:send_text(0, "Checking Stage")
-    --if -- battery:voltage(instance) < battery_threshold or
-        --rc:has_valid_input() == false or -- do we need this cuz it would throw an error anyway (Ask Cam)
-        --gps:status(instance) == GPS.NO_GPS -- just to make sure that you have a GPS lock  
-    --then
-            --state = abort
-            --state = 0
-    --the following code is experimental for notification of second switch, look at release script for original--
-    --else
-        gcs:send_text(0,"FLIP SWITCH C")
-    --end
+    if battery:voltage(instance) < battery_threshold or
+        rc:has_valid_input() == false or -- do we need this cuz it would throw an error anyway (Ask Cam)
+        gps:status(instance) == GPS.NO_GPS -- just to make sure that you have a GPS lock  
+    then
+        state = 0 --abort 
     
-    if rc:get_pwm(rc_prerelease_channel) >= rc_prerelease_switch then
-        --state = ready
+    else
+        gcs:send_text(0,"FLIP SWITCH C")
+    end
+    
+    if rc:get_pwm(rc_arm_release_channel) >= rc_arm_release_switch then
+        
+        gcs:send_text(0, "Switching stages") --Switches into ready state
         state = state + 1
-        gcs:send_text(0, "Switching stages")
 
-    --else
-        --state = 0 --abort 
+    else
+        state = 0 --abort 
     end 
+
     return state 
     
 end
 
--- checks whether the drone is at the proper height to be dropped
+-- Ready: checks whether the drone is at the proper height to be dropped and can arm
 function ready()
     gcs:send_text(0, "Ready Stage")
-    if ahrs:healthy() then --make sure a home is set 
+    if ahrs:healthy() then 
+
+        --Initialize location (may need to do this at the top for cube mission)--
         local home = ahrs:get_home()
         local home_alt = home:alt()
         local position = ahrs:get_position()
         local altitude = position:alt()
         local final_alt = altitude - home_alt
-        if final_alt < target_drop_height then --need to be corrected for location 
-            --state = detach
-            state = state + 1
+        local armSuccess = false
+
+        arming:arm()
+        if vehicle:is_armed() then --will throwmode intiate here? Or will it be too fast? 
+            armSuccess = true
+            arming:disarm()
+        end
+
+        if final_alt < target_drop_height and armSuccess == true then 
+            state = state + 1 --Switches into detach state
             gcs:send_text(0, "Switching stages")
         end
         --gcs:send_text(5, string.format("Altitude: %.1f", altitude))
@@ -104,50 +138,52 @@ function ready()
     
 end 
 
--- detaches the quad by commanding the servo that releases the quad body
+--Detach: detaches the quad by commanding the servo that releases the quad body
 function detach()
     gcs:send_text(0, "Detach Stage")
-    --servo:set_output(servo_release_output, PWM) this might throw an error during launch 
-    --if ahrs:get_accel() < quad_accel_threshold then
-        --state = released
-        --if not arming:is_armed() then
-           -- arming:arm()
-        --end
+    servo:set_output(servo_release_output, PWM) --may need to change to timed
+    --make sure none of these are blocking 
+
+    --timer or limit switch
+        --if switch detected or time == something 
+            --drone arms ; again will intiate throw mode too early 
+
+    if ahrs:get_accel() < quad_accel_threshold then
+       
+        gcs:send_text(0, "Switching stages") 
         state = state + 1
-        gcs:send_text(0, "Switching stages")
-    --end
+
+    end     
+
     return state 
 end
 
--- quad performs stabilization after entering free fall
+-- Released: quad performs stabilization after entering free fall
 function released()
-    -- throw mode part 
-    -- descends to 500 feet 
     gcs:send_text(0, "Released Stage")
-    vehicle:set_mode(THROW_MODE)
 
-    if not arming:is_armed() then
+    if not arming:is_armed() then --ensures drone is still armed 
         arming:arm()
-    end
-   -- else
+    
+
+   else
         if ahrs:healthy() then --make sure a home is set 
             local home = ahrs:get_home()
             local home_alt = home:alt()
             local position = ahrs:get_position()
             local altitude = position:alt()
             local final_alt = altitude - home_alt
-            if final_alt < 12192 then --needs to correct for location 
-                arming:disarm()
-                state = state + 1
+            if final_alt < 12192 then 
+                state = state + 1 --once cube mission integrated, this will switch the into another state that begins the cube mission
             end
         end
-    --end
+    end
     return state 
 end
 
--- code will end up here if something's gone terribly wrong (but it won't)
-function abort()
-    gcs:send_text(0, "Abort")
+-- Initial Abort: code will end up here if something's gone terribly wrong (but it won't)
+function initial_abort()
+    gcs:send_text(0, "Initial Abort")
     vehicle:set_mode(BRAKE_MODE) -- just don't do anything, abort if quad has not been released
     if ahrs:healthy() then --make sure a home is set 
         local home = ahrs:get_home()
@@ -162,72 +198,61 @@ function abort()
     return
 end
 
---function abort_free_fall() --we still don't know what is going in here 
-    --gcs:send_text(0, "Abort Free Fall")
---end
+-- Secondary Abort: abort state if the drone is in free fall or during cube mission
+function secondary_abort() 
+    gcs:send_text(0, "Secondary Abort")
+    vehicle:set_mode(LAND_MODE)
 
-function update()
-    if rc:get_pwm(rc_script_start_channel) >= rc_script_start_switch then
-    --if not arming:is_armed() then--or not vehicle:get_mode() ~= AUTO_MODE then --check logic 
-        --arming:arm()
-        --vehicle:set_mode(AUTO_MODE)
-         -- test to see if we can arm through software 
+end
 
-    --elseif arming:is_armed() then --and vehicle:get_mode() ~= AUTO_MODE then
-        --if necessary log data here- test if we need a command to 
-        --SRV_Channels:set_output_pwm_chan_timeout(channel, pwm, timeout)--set motors off, not sure if this is the most ideal command to use 
-        local acceleration = ahrs:get_accel():z()
-        local velocity = ahrs:get_velocity_NED() 
-        --state = 1 --1 is rocket_flight
+function update()--need to add a reset switch 
 
-        --returns orientation 
+    if not vehicle:get_mode() == THROW_MODE then
+        vehicle:set_mode(THROW_MODE) 
+    
+
+    elseif rc:get_pwm(rc_script_start_channel) >= rc_script_start_switch and vehicle:get_mode() == THROW_MODE then --check syntax
+
+
+        --Returns orientation-- 
         roll = math.deg(ahrs:get_roll())
         if (roll > math.abs(90)) then
             gcs:send_text(0, "I am upside down")
-        end
-
-        if acceleration and velocity then 
-
-            --if statements that print stages based on data, not sure what those baselines are...
-            if acceleration > 0 then 
-                gcs:send_text(0, "Launch detected")
-
-            elseif acceleration < 0 then --check signs since drone is upsidedown 
-                gcs:send_text(0, "Motor Burnout")
-            end 
-
-            if velocity:z() <= 0 then --also check signs here 
-                gcs:send_text(0, "Apogee, begin descent and start release sequence")
-        
-                if state == 1 then 
-                    rocket_flight()
-                elseif state == 2 then --2 is prerelease
-                    prerelease()
-                elseif state == 3 then --3 is checking
-                    checking()
-                elseif state == 4 then --4 is ready
-                    ready()
-                elseif state == 5 then --5 is detach 
-                    detach()
-                elseif state == 6 then --6 is released
-                    released()
-                elseif state == 7 then
-                    gcs:send_text(0, "Routine finished")
-                else
-                    abort() --state == 0
-                end
-
-            end 
         end 
+
+        --State Machine--
+        if state == 1 then --Figure out how to start once velocity is <0 and not constantly update
+            rocket_flight()
+        elseif state == 2 then --2 is arm_release
+            arm_release()
+        elseif state == 3 then --3 is checking
+            checking()
+        elseif state == 4 then --4 is ready
+            ready()
+        elseif state == 5 then --5 is detach 
+            detach()
+        elseif state == 6 then --6 is released                
+            released()
+        elseif state == 7 then
+            gcs:send_text(0, "Routine finished")
+        elseif state == 0 then --initial abort
+            initial_abort() --state == 0
+        elseif state == 10 then
+            secondary_abort()
+        
+        end
     end
     return update, 1000
 end 
 
 rocket_flight()
-prerelease()
+arm_release()
 checking()
 ready()
 detach()
 released()
+initial_abort()
+secondary_abort()
+
 
 return update()
