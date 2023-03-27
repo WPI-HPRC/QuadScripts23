@@ -59,7 +59,7 @@ function rocket_flight()
             gcs:send_text(0, "Apogee, begin descent and start release sequence")
         end
 
-        if rc:get_pwm(rc_start_channel) >= rc_start_switch then
+        if rc:get_pwm(rc_start_channel) >= rc_start_switch then --change to when payload chutes are deployed 
             gcs:send_text(0, "Switching stages")
             state = state + 1 --switch state to arm_release
 
@@ -75,7 +75,7 @@ end
 function arm_release()
     gcs:send_text(0, "Pre-release Stage")
     servo:set_output(servo_release_output, PWM) --Drops arms
-    if button pressed || camera rc switch flipped then --edit to reflect, add camera stuff 
+    if button (limit switch) pressed || camera rc switch flipped then --edit to reflect, add camera stuff 
         gcs:send_text(0, "Switching stages")
         state = state + 1 --switch state to checking
 
@@ -89,8 +89,8 @@ end
 --and waits for pilot command before moving to the next state
 
 --Whether or not we have tests here depends on testing 
-function checking()
-    gcs:send_text(0, "Checking Stage")
+function checking() --combine with arm release 
+    gcs:send_text(0, "Checking Stage") --delete this/move to arm 
     if battery:voltage(instance) < battery_threshold or
         rc:has_valid_input() == false or -- do we need this cuz it would throw an error anyway (Ask Cam)
         gps:status(instance) == GPS.NO_GPS -- just to make sure that you have a GPS lock  
@@ -152,8 +152,8 @@ function detach()
     servo:set_output(servo_release_output, PWM) --may need to change to timed
     --make sure none of these are blocking 
 
-    --timer or limit switch
-        --if switch detected or time == something 
+    --timer 
+        -- time == something 
             --drone arms ; again will intiate throw mode too early 
 
     if ahrs:get_accel() < quad_accel_threshold then
@@ -185,7 +185,7 @@ function released()
             local altitude = position:alt()
             local final_alt = altitude - home_alt
             if final_alt < 12192 then -- This will need to be changed once cube mission incorporated 
-                state = state + 1 --once cube mission integrated, this will switch the into another state that begins the cube mission
+                state = state + 1 --once cube mission integrated, this will switch the into another state that begins the cube mission, auto
             end
 
         else

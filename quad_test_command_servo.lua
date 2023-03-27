@@ -1,4 +1,5 @@
---commands servo automonously--
+--commands servo (will eventually be done in auto), also checks limit switch and GPS checks automonously--
+--(Yes I was too lazy to make extra test files for each test...)
 
 local rc_cube_servo = 0 
 local rc_cube__switch = 0
