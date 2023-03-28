@@ -6,22 +6,33 @@ local flight_distance = 10
 local state = 0
 local LAND_MODE = 9
 local START_MODE = 16
-GUIDED_MODE = 4
+local GUIDED_MODE = 4
 
 local rc_position_hold = 1500
 local rc_mode = 7
 
-local target_vel = Vector3f() --this may need to be put here in the cube code
-local current_location = Location() 
-local start_location = Location()
+-- local target_vel = Vector3f() --this may need to be put here in the cube code
+-- local current_location = Location() 
+local start_location 
 
 --arming:is_armed() and
   
 function update()
 
-    if rc:get_pwm(rc_mode) >= rc_position_hold then --add automode? 
-        vehicle:set_mode(GUIDED_MODE)
-        gcs:send_text(0,"Script Running")
+    if not arming:is_armed() then 
+        state = 0
+    
+    else 
+        pwm = rc:get_pwm(rc_mode)
+        if pwm and pwm >= rc_position_hold then 
+            if state == 0 then
+                if vehicle:set_mode(GUIDED_MODE) then
+                    state = state + 1
+                end
+            elseif (state == 1) then
+                --stuff here 
+            end
+        
         if ahrs:healthy() then    
             if state == 0 then
                 --compare distance code to square reference, may need to declare further varibles 
@@ -55,6 +66,7 @@ function update()
                 gcs:send_text("Landing Now")
             end
         end
+    end
     end
     return update, 1000 
 end
