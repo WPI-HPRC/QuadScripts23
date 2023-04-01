@@ -1,6 +1,7 @@
 --fly triangle autonoumously-- adjust altitude values depending on how payload wants to test
 --after this mode passes, test throw mode 
 --does not test with altitide change 
+--Link to reference source: https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_Scripting/examples/set-target-velocity.lua
 
 local AUTO_MODE = 3 --need to set values
 local LAND_MODE = 0
@@ -36,7 +37,7 @@ local home_alt
 local home 
 local state = 0
 local tri_state = 0
-local target_alt = 7
+local target_alt = 7 --target alt in meters 
 local start_location
 
 
@@ -61,7 +62,7 @@ function update()
     if not arming:is_armed() then
         state = 0
     else
-        if vehicle:get_mode(POS_HOLD) then
+        if vehicle:get_mode(POS_HOLD) and state == 0 then
                     -- change to guided mode
             if (vehicle:set_mode(GUIDED_MODE)) then     -- change to Guided mode
                 state = state + 1

@@ -1,4 +1,5 @@
--- command a Copter to takeoff to 10m and fly a square pattern
+-- Link to repo: https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_Scripting/examples/set-target-velocity.lua
+--command a Copter to takeoff to 10m and fly a square pattern
 --
 -- CAUTION: This script only works for Copter
 -- this script waits for the vehicle to be armed and RC6 input > 1800 and then:
