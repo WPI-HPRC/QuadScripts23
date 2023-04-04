@@ -42,7 +42,7 @@ local start_location
 
 
 
-local target_vel = Vector3f()
+--local target_vel = Vector3f()
 
 local offsetNorth = {
     [0]= OFFSET_NORTH_1,  
@@ -62,7 +62,7 @@ function update()
     if not arming:is_armed() then
         state = 0
     else
-        if vehicle:get_mode(POS_HOLD) and state == 0 then
+        if vehicle:get_mode() == POS_HOLD and state == 0 then
                     -- change to guided mode
             if (vehicle:set_mode(GUIDED_MODE)) then     -- change to Guided mode
                 state = state + 1
@@ -88,36 +88,43 @@ function update()
 
             for i = 0,2 do 
 
-                local current_location = ahrs.get_location()
+                local current_location = ahrs:get_location()
                 local target_vel = Vector3f()
                 local target = Location()
+                
                 if(tri_state == 0) then
+                    gcs:send_text(0, "tri 0")
                     offset_north = offsetNorth[i] --sets offset value according to array index
                     offset_east = offsetEast[i]
                     target = current_location
                     target:offset(offset_north, offset_east) --offsets in distance (m)
                     tri_state = tri_state + 1
+                    
 
                 elseif tri_state == 1 then
+                    gcs:send_text(0, "tri 1")
                     if current_location then
                         local distance = current_location:get_distance_NE(target)
                         --distance should be updating continuously according to ahrs values
                         if distance:x() > MIN_DISTANCE and distance:y() > MIN_DISTANCE then 
+                            gcs:send_text(0, "should be moving here")
                             target_vel:x(x_velocities[i]) 
                             target_vel:y(y_velocities[i]) 
-
-                        else
-                            tri_state = 0
+                            vehicle:set_target_velocity_NED(target_vel)
+ 
+                        --else
+                            --tri_state = 0
                         end 
 
+                        if (vehicle:set_target_velocity_NED(target_vel)) then   -- send target velocity to vehicle
+                            gcs:send_text(0, "pos:" .. tostring(math.floor(distance:x())) .. "," .. tostring(math.floor(distance:y())) .. " sent vel x:" .. tostring(target_vel:x()) .. " y:" .. tostring(target_vel:y()))
+                        else
+                            gcs:send_text(0, "failed to execute velocity command")
+                        end
                     end
                 end
 
-                if (vehicle:set_target_velocity_NED(target_vel)) then   -- send target velocity to vehicle
-                    gcs:send_text(0, "pos:" .. tostring(math.floor(dist_NE:x())) .. "," .. tostring(math.floor(dist_NE:y())) .. " sent vel x:" .. tostring(target_vel:x()) .. " y:" .. tostring(target_vel:y()))
-                else
-                    gcs:send_text(0, "failed to execute velocity command")
-                end
+                
 
             end
         
