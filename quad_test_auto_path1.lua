@@ -22,14 +22,14 @@ function update()
         
         elseif state == 1 then
             --compare distance code to square reference, may need to declare further varibles 
-            local current_location = ahrs:get_position() 
+            local current_location = ahrs:get_location() 
             if current_location then
                 start_location = current_location
                 state = state + 1
             end 
 
         elseif state == 2  then
-            local current_location = ahrs:get_position()
+            local current_location = ahrs:get_location()
             if start_location and current_location then
                 local distance = start_location:get_distance(current_location) --not sure if current distance is needed 
                 

@@ -62,7 +62,7 @@ function update()
     if not arming:is_armed() then
         state = 0
     else
-        if vehicle:get_mode() == POS_HOLD and state == 0 then
+        if (vehicle:get_mode() == POS_HOLD and state == 0) then
                     -- change to guided mode
             if (vehicle:set_mode(GUIDED_MODE)) then     -- change to Guided mode
                 state = state + 1
@@ -75,9 +75,9 @@ function update()
               local vec_from_home = home:get_distance_NED(curr_loc)
               gcs:send_text(0, "alt above home: " .. tostring(math.floor(-vec_from_home:z())))
             
-                if (target_alt + vec_from_home:z()) > 1 then
+                if (target_alt + vec_from_home:z() > 1) then
                     target_vel:z(2)
-                elseif (target_alt + vec_from_home:z()) < -1 then
+                elseif (target_alt + vec_from_home:z() < -1) then
                     target_vel:z(-2)
                 elseif (math.abs(target_alt + vec_from_home:z()) < 1) then
                     state = state + 1
@@ -101,7 +101,7 @@ function update()
                     tri_state = tri_state + 1
                     
 
-                elseif tri_state == 1 then
+                elseif (tri_state == 1) then
                     gcs:send_text(0, "tri 1")
                     if current_location then
                         local distance = current_location:get_distance_NE(target)
@@ -110,7 +110,6 @@ function update()
                             gcs:send_text(0, "should be moving here")
                             target_vel:x(x_velocities[i]) 
                             target_vel:y(y_velocities[i]) 
-                            vehicle:set_target_velocity_NED(target_vel)
  
                         --else
                             --tri_state = 0
@@ -128,7 +127,7 @@ function update()
 
             end
         
-            if i == 2 then
+            if (i == 2) then
                 state = state + 1
             end
         

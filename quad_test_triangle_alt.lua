@@ -43,7 +43,7 @@ local start_location
 
 
 
-local target_vel = Vector3f()
+--local target_vel = Vector3f()
 
 local offsetNorth = {
     [0]= OFFSET_NORTH_1,  
@@ -63,7 +63,7 @@ function update()
     if not arming:is_armed() then
         state = 0
     else
-        if vehicle:get_mode(POS_HOLD) and state == 0 then
+        if (vehicle:get_mode(POS_HOLD) and state == 0) then
                     -- change to guided mode
             if (vehicle:set_mode(GUIDED_MODE)) then     -- change to Guided mode
                 state = state + 1
