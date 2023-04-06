@@ -8,8 +8,11 @@ local CUBE_SERVO_ON_PWM = 0
 local CUBE_SERVO_ON_TIMEOUT=0
 
 local servo_arm_output = 0
-local servo_release_output = 0
-local PWM = 0 
+local SERVO = 94
+local servo_channel = SRV_Channels:find_channel(SERVO)
+local PWM = 1900 
+local rc_arm_release_switch = 1500; 
+local rc_arm_release_channel = 7; 
 
 local ARM_BUTTON = 1
 
@@ -24,19 +27,24 @@ function update()
     -- end
 
     --Arm Deploy Test--
-    -- gcs:send_text(0, "Commence Arm Drop")
-    -- servo:set_output(servo_arm_output, PWM) --Drops arms, again check if servo needs to be defined 
-
+    if rc:get_pwm(rc_arm_release_channel) >= rc_arm_release_switch then
+        gcs:send_text(0, "High")
+        SRV_Channels:set_output_pwm_chan_timeout(servo_channel, 1900, 1000) --Drops arms, again check if servo needs to be defined 
+    end
+    if rc:get_pwm(rc_arm_release_channel) <= rc_arm_release_switch then
+        gcs:send_text(0, "Low")
+        SRV_Channels:set_output_pwm_chan_timeout(servo_channel, 1100, 1000) --Drops arms, again check if servo needs to be defined 
+    end
     -- if button:get_button_state(ARM_BUTTON) then --we need to check how the button class decides that button is active 
     --     gcs:send_text(0, "Arm Drop Detected")  
     -- else
     --     gcs:send_text(0, "Not Detected") 
     -- end 
     
-    --Release From Retention System Test--
-    gcs:send_text(0, "Start release")
-    servo:set_output(servo_release_output, PWM) --may need to change to timed
-    --make sure none of these are blocking 
+    -- --Release From Retention System Test--
+    -- gcs:send_text(0, "Start release")
+    -- servo:set_output(servo_release_output, PWM) --may need to change to timed
+    -- --make sure none of these are blocking 
 
     --timer 
         -- time == something 
