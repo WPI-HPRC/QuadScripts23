@@ -27,14 +27,20 @@ function update()
     -- end
 
     --Arm Deploy Test--
-    if rc:get_pwm(rc_arm_release_channel) >= rc_arm_release_switch then
+    if rc:get_pwm(rc_arm_release_channel) > 1800 then
         gcs:send_text(0, "High")
         SRV_Channels:set_output_pwm_chan_timeout(servo_channel, 1900, 1000) --Drops arms, again check if servo needs to be defined 
-    end
-    if rc:get_pwm(rc_arm_release_channel) <= rc_arm_release_switch then
+
+    elseif rc:get_pwm(rc_arm_release_channel) < 1000 then
         gcs:send_text(0, "Low")
         SRV_Channels:set_output_pwm_chan_timeout(servo_channel, 1100, 1000) --Drops arms, again check if servo needs to be defined 
+
+    elseif(rc:get_pwm(rc_arm_release_channel) == 1500) then
+        gcs:send_text(0, "Neutral")
+    else 
+        gcs:send_text(0, "Neutral")
     end
+    
     -- if button:get_button_state(ARM_BUTTON) then --we need to check how the button class decides that button is active 
     --     gcs:send_text(0, "Arm Drop Detected")  
     -- else
