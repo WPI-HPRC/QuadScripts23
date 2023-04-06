@@ -72,18 +72,18 @@ function rocket_flight()
 end
 
 -- Arm-release: drops the arms from the retention system and waits for second signal either from button or rc to switch states
-function arm_release()
-    gcs:send_text(0, "Pre-release Stage")
-    servo:set_output(servo_release_output, PWM) --Drops arms
-    if button (limit switch) pressed || camera rc switch flipped then --edit to reflect, add camera stuff 
-        gcs:send_text(0, "Switching stages")
-        state = state + 1 --switch state to checking
+-- function arm_release()
+--     gcs:send_text(0, "Pre-release Stage")
+--     servo:set_output(servo_release_output, PWM) --Drops arms
+--     if button (limit switch) pressed || camera rc switch flipped then --edit to reflect, add camera stuff 
+--         gcs:send_text(0, "Switching stages")
+--         state = state + 1 --switch state to checking
 
-    else
-        state = 0 --abort
-    end
-    return state
-end
+--     else
+--         state = 0 --abort
+--     end
+--     return state
+-- end
 
 -- Checking: checks battery voltage, rc connection, and GPS lock 
 --and waits for pilot command before moving to the next state
