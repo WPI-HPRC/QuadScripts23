@@ -8,8 +8,10 @@ local CUBE_SERVO_ON_PWM = 0
 local CUBE_SERVO_ON_TIMEOUT=0
 
 local servo_arm_output = 0
-local SERVO = 94
-local servo_channel = SRV_Channels:find_channel(SERVO)
+local SERVO1 = 94
+local SERVO2 = 95
+local servo_channel1 = SRV_Channels:find_channel(SERVO1)
+local servo_channel2 = SRV_Channels:find_channel(SERVO2)
 local PWM = 1900 
 local rc_arm_release_switch = 1500; 
 local rc_arm_release_channel = 7; 
@@ -28,13 +30,13 @@ function update()
 
     --Arm Deploy Test--
     if rc:get_pwm(rc_arm_release_channel) > 1800 then
-        gcs:send_text(0, "High")
-        SRV_Channels:set_output_pwm_chan_timeout(servo_channel, 1900, 1000) --Drops arms, again check if servo needs to be defined 
-
+        gcs:send_text(0, "High1")
+        SRV_Channels:set_output_pwm_chan_timeout(servo_channel1, 1900, 1000) --Drops arms, again check if servo needs to be defined 
+        SRV_Channels:set_output_pwm_chan_timeout(servo_channel2, 1900, 1000)
     elseif rc:get_pwm(rc_arm_release_channel) < 1000 then
-        gcs:send_text(0, "Low")
-        SRV_Channels:set_output_pwm_chan_timeout(servo_channel, 1100, 1000) --Drops arms, again check if servo needs to be defined 
-
+        gcs:send_text(0, "Low1")
+        SRV_Channels:set_output_pwm_chan_timeout(servo_channel1, 1300, 1000) --Drops arms, again check if servo needs to be defined 
+        SRV_Channels:set_output_pwm_chan_timeout(servo_channel2, 1300, 1000)
     elseif(rc:get_pwm(rc_arm_release_channel) == 1500) then
         gcs:send_text(0, "Neutral")
     else 
