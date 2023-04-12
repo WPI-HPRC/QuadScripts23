@@ -12,6 +12,7 @@ local takeoff_alt_above_home = 6
 local copter_guided_mode_num = 4
 local copter_rtl_mode_num = 6
 local POS_HOLD = 16
+local LAND_MODE = 0
 local stage = 0
 local start_loc  -- vehicle location when starting square
 local square_side_length = 20   -- length of each side of square
@@ -24,24 +25,29 @@ function update()
     
       if (vehicle:get_mode() == POS_HOLD and stage == 0) then          -- change to guided mode
         if (vehicle:set_mode(copter_guided_mode_num)) then     -- change to Guided mode
+          local curr_loc = ahrs:get_location()
+          if curr_loc then
+                start_loc = curr_loc          -- record location when starting square
+              end
           stage = stage + 3
         end
-    --   elseif (stage == 1) then      -- Stage1: takeoff
-    --     if (vehicle:start_takeoff(takeoff_alt_above_home)) then
-    --       stage = stage + 1
-    --     end
-    --   elseif (stage == 2) then      -- Stage2: check if vehicle has reached target altitude
-    --     local home = ahrs:get_home()
-    --     local curr_loc = ahrs:get_location()
-    --     if home and curr_loc then
-    --       local vec_from_home = home:get_distance_NED(curr_loc)
-    --       gcs:send_text(0, "alt above home: " .. tostring(math.floor(-vec_from_home:z())))
-    --       if (math.abs(takeoff_alt_above_home + vec_from_home:z()) < 1) then
-    --         stage = stage + 1
-    --         start_loc = curr_loc          -- record location when starting square
-    --       end
-    --     end
+      -- elseif (stage == 1) then      -- Stage1: takeoff
+      --   if (vehicle:start_takeoff(takeoff_alt_above_home)) then
+      --     stage = stage + 1
+      --   end
+      -- elseif (stage == 2) then      -- Stage2: check if vehicle has reached target altitude
+      --   local home = ahrs:get_home()
+      --   local curr_loc = ahrs:get_location()
+      --   if home and curr_loc then
+      --     local vec_from_home = home:get_distance_NED(curr_loc)
+      --     gcs:send_text(0, "alt above home: " .. tostring(math.floor(-vec_from_home:z())))
+      --     if (math.abs(takeoff_alt_above_home + vec_from_home:z()) < 1) then
+      --       stage = stage + 1
+      --       start_loc = curr_loc          -- record location when starting square
+      --     end
+      --   end
       elseif (stage >= 3 and stage <= 5) then   -- fly a triangle using velocity controller
+        gcs:send_text(0, "Got here"); 
         local curr_loc = ahrs:get_location()
         local target_vel = Vector3f()           -- create velocity vector
         if (start_loc and curr_loc) then
@@ -49,6 +55,7 @@ function update()
 
           -- Stage3 : fly to first point (N) at 2m/s
           if (stage == 3) then
+            gcs:send_text(0, "stage 3");
             target_vel:x(2)
             if (dist_NE:x() >= 10) then
               stage = stage + 1
@@ -57,6 +64,7 @@ function update()
 
           -- Stage4 : fly SE at 2m/s
           if (stage == 4) then
+            gcs:send_text(0, "stage 4");
             target_vel:x(-2)
             target_vel:y(2) 
             if (dist_NE:y() >= 8.6 and dist_NE:x() <= 5 ) then
@@ -66,6 +74,7 @@ function update()
 
           -- Stage5 : fly SW at 2m/s
           if (stage == 5) then
+            gcs:send_text(0, "stage 5");
             target_vel:x(-2)
             target_vel:y(-2)
             if (dist_NE:x() <= 1 and dist_NE:y() <= 1) then
@@ -79,9 +88,11 @@ function update()
           else
             gcs:send_text(0, "failed to execute velocity command")
           end
+        else
+          gcs:send_text(0, "position failed")
         end
       elseif (stage == 6) then  -- Stage7: change to RTL mode
-        vehicle:set_mode(copter_rtl_mode_num)
+        vehicle:set_mode(LAND_MODE)
         stage = stage + 1
         gcs:send_text(0, "finished square, switching to RTL")
       end

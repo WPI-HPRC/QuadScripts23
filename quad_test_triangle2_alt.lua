@@ -38,13 +38,18 @@ function update()
           local vec_from_home = home:get_distance_NED(curr_loc)
           gcs:send_text(0, "alt above home: " .. tostring(math.floor(-vec_from_home:z())))
             if (takeoff_alt_above_home + vec_from_home:z() > 1) then
+              gcs:send_text(0, "ascending")
                 target_vel:z(2)
             elseif (takeoff_alt_above_home + vec_from_home:z() < -1) then
+              gcs:send_text(0, "descending")
                 target_vel:z(-2)
             elseif (math.abs(takeoff_alt_above_home + vec_from_home:z()) < 1) then
+              gcs:send_text(0, "at alt, change to state 3")
                 stage = stage + 1
                 start_loc = curr_loc          -- record location when starting square
             end
+        else
+          gcs:send_text(0, "Position failed alt_change")
         end
       elseif (stage >= 3 and stage <= 5) then   -- fly a triangle using velocity controller
         local curr_loc = ahrs:get_location()
@@ -84,6 +89,8 @@ function update()
           else
             gcs:send_text(0, "failed to execute velocity command")
           end
+        else
+          gcs:send_text(0, "pos 2 fail")
         end
       elseif (stage == 6) then  -- Stage7: change to RTL mode
         vehicle:set_mode(copter_rtl_mode_num)
