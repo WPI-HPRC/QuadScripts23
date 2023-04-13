@@ -10,11 +10,11 @@ local CUBE_SERVO_ON_TIMEOUT=0
 local servo_arm_output = 0
 local SERVO1 = 94
 local SERVO2 = 95
-local servo_channel1 = SRV_Channels:find_channel(SERVO1)
-local servo_channel2 = SRV_Channels:find_channel(SERVO2)
+local servo_channel_upper = SRV_Channels:find_channel(SERVO1) --upper is servo 1
+local servo_channel_lower = SRV_Channels:find_channel(SERVO2)   -- lower is servo 2
 local PWM = 1900 
-local rc_arm_release_switch = 1500; 
-local rc_arm_release_channel = 7; 
+local rc_arm_release_switch = 1500 
+local rc_arm_release_channel = 7
 
 local ARM_BUTTON = 1
 
@@ -31,17 +31,19 @@ function update()
     --Arm Deploy Test--
     if rc:get_pwm(rc_arm_release_channel) > 1800 then
         gcs:send_text(0, "High1")
-        SRV_Channels:set_output_pwm_chan_timeout(servo_channel1, 1900, 1000) --Drops arms, again check if servo needs to be defined 
-        SRV_Channels:set_output_pwm_chan_timeout(servo_channel2, 1900, 1000)
+        SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1900, 1000) --Drops arms, again check if servo needs to be defined 
+        SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1900, 1000)
     elseif rc:get_pwm(rc_arm_release_channel) < 1000 then
         gcs:send_text(0, "Low1")
-        SRV_Channels:set_output_pwm_chan_timeout(servo_channel1, 1300, 1000) --Drops arms, again check if servo needs to be defined 
-        SRV_Channels:set_output_pwm_chan_timeout(servo_channel2, 1300, 1000)
+        SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1300, 1000) --Drops arms, again check if servo needs to be defined 
+        SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1300, 1000)
     elseif(rc:get_pwm(rc_arm_release_channel) == 1500) then
         gcs:send_text(0, "Neutral")
     else 
         gcs:send_text(0, "Neutral")
     end
+
+    --Upper servo, cube held when PWM is low, drops when high 
     
     -- if button:get_button_state(ARM_BUTTON) then --we need to check how the button class decides that button is active 
     --     gcs:send_text(0, "Arm Drop Detected")  

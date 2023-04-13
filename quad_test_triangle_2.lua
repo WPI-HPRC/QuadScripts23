@@ -1,12 +1,8 @@
 -- Link to repo: https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_Scripting/examples/set-target-velocity.lua
---command a Copter to takeoff to 10m and fly a square pattern
---
--- CAUTION: This script only works for Copter
--- this script waits for the vehicle to be armed and RC6 input > 1800 and then:
---    a) switches to Guided mode
---    b) takeoff to 10m
---    c) flies a 20m x 20m square pattern using the velocity controller
---    d) switches to RTL mode
+--flies an obtuse triangle with 10m sides, descends and activates servo at each point before ascending to original alt
+
+--Added basic servo functionality, not enough to actually drop cubes, but enough to test
+--drops two cubes (maybe) 
 
 local takeoff_alt_above_home = 6
 local copter_guided_mode_num = 4
@@ -16,6 +12,11 @@ local LAND_MODE = 0
 local stage = 0
 local start_loc  -- vehicle location when starting square
 local square_side_length = 20   -- length of each side of square
+
+local SERVO1 = 94
+local SERVO2 = 95
+local servo_channel_upper = SRV_Channels:find_channel(SERVO1)
+local servo_channel_lower = SRV_Channels:find_channel(SERVO2)
 
 -- the main update function that uses the takeoff and velocity controllers to fly a rough square pattern
 function update()
@@ -46,53 +47,112 @@ function update()
       --       start_loc = curr_loc          -- record location when starting square
       --     end
       --   end
-      elseif (stage >= 3 and stage <= 5) then   -- fly a triangle using velocity controller
-        gcs:send_text(0, "Got here"); 
+      elseif (stage >= 3 and stage <= 11) then   -- fly a triangle using velocity controller
+        gcs:send_text(0, "Got here") 
         local curr_loc = ahrs:get_location()
         local target_vel = Vector3f()           -- create velocity vector
         if (start_loc and curr_loc) then
-          local dist_NE = start_loc:get_distance_NE(curr_loc)
+          local dist_NED = start_loc:get_distance_NED(curr_loc)--changed this to NED
 
           -- Stage3 : fly to first point (N) at 2m/s
           if (stage == 3) then
-            gcs:send_text(0, "stage 3");
+            gcs:send_text(0, "stage 3")
             target_vel:x(2)
-            if (dist_NE:x() >= 10) then
+            if (dist_NED:x() >= 10) then
+              stage = stage + 1
+            end
+          end
+
+          if (stage == 4)then
+            gcs:send_text(0, "stage 4, descending")
+            target_vel:z(2)
+            if (dist_NED:z() >= 2) then --if this doesn't work then we may be in cm (kill me), also check orientation as well, may need to be negative
+              SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1100, 1000) --drops when PWM is high
+              gcs:send_text(0, "Servo stuff here")
+              stage = stage + 1
+            end
+          end
+
+          if (stage == 5)then
+            gcs:send_text(0, "stage 5, ascending")
+            target_vel:z(-2)
+            if (dist_NED:z() <= 1) then
+              --SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1300, 500) --reset lower servo quickly
+               --SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1900, 1000) --drop upper cube
               stage = stage + 1
             end
           end
 
           -- Stage4 : fly SE at 2m/s
-          if (stage == 4) then
-            gcs:send_text(0, "stage 4");
+          if (stage == 6) then
+            gcs:send_text(0, "stage 6")
             target_vel:x(-2)
             target_vel:y(2) 
-            if (dist_NE:y() >= 8.6 and dist_NE:x() <= 5 ) then
+            if (dist_NED:y() >= 8.6 and dist_NED:x() <= 5 ) then
+              stage = stage + 1
+            end
+          end
+
+          if (stage == 7)then
+            gcs:send_text(0, "stage 7, descending")
+            target_vel:z(2)
+            if (dist_NED:z() >= 2) then
+              --SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1900, 1000) --drop second cube 
+              gcs:send_text(0, "Servo stuff here")
+              stage = stage + 1
+            end
+          end
+
+          if (stage == 8)then
+            gcs:send_text(0, "stage 8, ascending")
+            target_vel:z(-2)
+            if (dist_NED:z() <= 1) then
+              -- SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1500, 1000) --need to figure out servo timing and stuff for third cube
               stage = stage + 1
             end
           end
 
           -- Stage5 : fly SW at 2m/s
-          if (stage == 5) then
-            gcs:send_text(0, "stage 5");
-            target_vel:x(-2)
+          if (stage == 9) then
+            gcs:send_text(0, "stage 9")
+            target_vel:x(-1) --changed this 
             target_vel:y(-2)
-            if (dist_NE:x() <= 1 and dist_NE:y() <= 1) then
+            if (dist_NED:x() <= 1 and dist_NED:y() <= 1) then
+              stage = stage + 1
+            end
+          end
+
+          if (stage == 10)then
+            gcs:send_text(0, "stage 10, descending")
+            target_vel:z(2)
+            if (dist_NED:z() >= 2) then
+              --SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1900, 1000)
+              gcs:send_text(0, "Servo stuff here")
+              stage = stage + 1
+            end
+          end
+
+          if (stage == 11)then
+            gcs:send_text(0, "stage 11, ascending")
+            target_vel:z(-2)
+            if (dist_NED:z() <= 1) then
+              -- SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1500, 1000)
               stage = stage + 1
             end
           end
 
           -- send velocity request
           if (vehicle:set_target_velocity_NED(target_vel)) then   -- send target velocity to vehicle
-            gcs:send_text(0, "pos:" .. tostring(math.floor(dist_NE:x())) .. "," .. tostring(math.floor(dist_NE:y())) .. " sent vel x:" .. tostring(target_vel:x()) .. " y:" .. tostring(target_vel:y()))
+            gcs:send_text(0, "pos:" .. tostring(math.floor(dist_NED:x())) .. "," .. tostring(math.floor(dist_NED:y())) .. " sent vel x:" .. tostring(target_vel:x()) .. " y:" .. tostring(target_vel:y()))
           else
             gcs:send_text(0, "failed to execute velocity command")
           end
         else
           gcs:send_text(0, "position failed")
         end
-      elseif (stage == 6) then  -- Stage7: change to RTL mode
-        vehicle:set_mode(LAND_MODE)
+
+      elseif (stage == 12) then  -- Stage7: change to RTL mode
+        vehicle:set_mode(copter_rtl_mode_num)
         stage = stage + 1
         gcs:send_text(0, "finished square, switching to RTL")
       end
