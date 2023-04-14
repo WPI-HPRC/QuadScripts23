@@ -8,7 +8,7 @@ local takeoff_alt_above_home = 6
 local copter_guided_mode_num = 4
 local copter_rtl_mode_num = 6
 local POS_HOLD = 16
-local LAND_MODE = 0
+local LAND_MODE = 9
 local stage = 0
 local start_loc  -- vehicle location when starting square
 local square_side_length = 20   -- length of each side of square
@@ -57,15 +57,15 @@ function update()
           -- Stage3 : fly to first point (N) at 2m/s
           if (stage == 3) then
             gcs:send_text(0, "stage 3")
-            target_vel:x(2)
-            if (dist_NED:x() >= 10) then
+            target_vel:x(3)
+            if (dist_NED:x() >= 8) then
               stage = stage + 1
             end
           end
 
           if (stage == 4)then
             gcs:send_text(0, "stage 4, descending")
-            target_vel:z(2)
+            target_vel:z(3)
             if (dist_NED:z() >= 2) then --if this doesn't work then we may be in cm (kill me), also check orientation as well, may need to be negative
               SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1100, 1000) --drops when PWM is high
               gcs:send_text(0, "Servo stuff here")
@@ -75,10 +75,10 @@ function update()
 
           if (stage == 5)then
             gcs:send_text(0, "stage 5, ascending")
-            target_vel:z(-2)
+            target_vel:z(-3)
             if (dist_NED:z() <= 1) then
-              --SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1300, 500) --reset lower servo quickly
-               --SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1900, 1000) --drop upper cube
+              SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1900, 500) --reset lower servo quickly
+               SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1900, 1000) --drop upper cube
               stage = stage + 1
             end
           end
@@ -86,18 +86,18 @@ function update()
           -- Stage4 : fly SE at 2m/s
           if (stage == 6) then
             gcs:send_text(0, "stage 6")
-            target_vel:x(-2)
-            target_vel:y(2) 
-            if (dist_NED:y() >= 8.6 and dist_NED:x() <= 5 ) then
+            target_vel:x(-3)
+            target_vel:y(3) 
+            if (dist_NED:y() >= 6 and dist_NED:x() <= 1 ) then
               stage = stage + 1
             end
           end
 
           if (stage == 7)then
             gcs:send_text(0, "stage 7, descending")
-            target_vel:z(2)
+            target_vel:z(3)
             if (dist_NED:z() >= 2) then
-              --SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1900, 1000) --drop second cube 
+              SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1100, 1000) --drop second cube 
               gcs:send_text(0, "Servo stuff here")
               stage = stage + 1
             end
@@ -105,7 +105,7 @@ function update()
 
           if (stage == 8)then
             gcs:send_text(0, "stage 8, ascending")
-            target_vel:z(-2)
+            target_vel:z(-3)
             if (dist_NED:z() <= 1) then
               -- SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1500, 1000) --need to figure out servo timing and stuff for third cube
               stage = stage + 1
@@ -115,16 +115,16 @@ function update()
           -- Stage5 : fly SW at 2m/s
           if (stage == 9) then
             gcs:send_text(0, "stage 9")
-            target_vel:x(-1) --changed this 
-            target_vel:y(-2)
-            if (dist_NED:x() <= 1 and dist_NED:y() <= 1) then
+            --target_vel:x(-1) --changed this 
+            target_vel:y(-3)
+            if (dist_NED:y() <= 1) then
               stage = stage + 1
             end
           end
 
           if (stage == 10)then
             gcs:send_text(0, "stage 10, descending")
-            target_vel:z(2)
+            target_vel:z(3)
             if (dist_NED:z() >= 2) then
               --SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1900, 1000)
               gcs:send_text(0, "Servo stuff here")
@@ -134,7 +134,7 @@ function update()
 
           if (stage == 11)then
             gcs:send_text(0, "stage 11, ascending")
-            target_vel:z(-2)
+            target_vel:z(-3)
             if (dist_NED:z() <= 1) then
               -- SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1500, 1000)
               stage = stage + 1
@@ -152,7 +152,7 @@ function update()
         end
 
       elseif (stage == 12) then  -- Stage7: change to RTL mode
-        vehicle:set_mode(copter_rtl_mode_num)
+        vehicle:set_mode(LAND_MODE)
         stage = stage + 1
         gcs:send_text(0, "finished square, switching to RTL")
       end
