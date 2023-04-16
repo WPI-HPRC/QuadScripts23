@@ -48,7 +48,7 @@ function update()
       --     end
       --   end
       elseif (stage >= 3 and stage <= 11) then   -- fly a triangle using velocity controller
-        gcs:send_text(0, "Got here") 
+        --gcs:send_text(0, "Got here") 
         local curr_loc = ahrs:get_location()
         local target_vel = Vector3f()           -- create velocity vector
         if (start_loc and curr_loc) then
@@ -56,7 +56,7 @@ function update()
 
           -- Stage3 : fly to first point (N) at 2m/s
           if (stage == 3) then
-            gcs:send_text(0, "stage 3")
+            --gcs:send_text(0, "stage 3")
             target_vel:x(3)
             if (dist_NED:x() >= 8) then
               stage = stage + 1
@@ -64,47 +64,48 @@ function update()
           end
 
           if (stage == 4)then
-            gcs:send_text(0, "stage 4, descending")
+            --gcs:send_text(0, "stage 4, descending")
             target_vel:z(3)
             if (dist_NED:z() >= 2) then --if this doesn't work then we may be in cm (kill me), also check orientation as well, may need to be negative
               SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1100, 1000) --drops when PWM is high
-              gcs:send_text(0, "Servo stuff here")
+              gcs:send_text(0, "Cube 1 Dropped")
               stage = stage + 1
             end
           end
 
           if (stage == 5)then
-            gcs:send_text(0, "stage 5, ascending")
+            --gcs:send_text(0, "stage 5, ascending")
             target_vel:z(-3)
             if (dist_NED:z() <= 1) then
               SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1900, 500) --reset lower servo quickly
-               SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1900, 1000) --drop upper cube
+              SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1900, 1000) --drop upper cube
               stage = stage + 1
             end
           end
 
           -- Stage4 : fly SE at 2m/s
           if (stage == 6) then
-            gcs:send_text(0, "stage 6")
-            target_vel:x(-3)
+            --gcs:send_text(0, "stage 6")
+            target_vel:x(-2)
             target_vel:y(3) 
             if (dist_NED:y() >= 6 and dist_NED:x() <= 1 ) then
+              SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1100, 1000)
               stage = stage + 1
             end
           end
 
           if (stage == 7)then
-            gcs:send_text(0, "stage 7, descending")
+            --gcs:send_text(0, "stage 7, descending")
             target_vel:z(3)
             if (dist_NED:z() >= 2) then
               SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1100, 1000) --drop second cube 
-              gcs:send_text(0, "Servo stuff here")
+              gcs:send_text(0, "Cube 2 Dropped")
               stage = stage + 1
             end
           end
 
           if (stage == 8)then
-            gcs:send_text(0, "stage 8, ascending")
+            --gcs:send_text(0, "stage 8, ascending")
             target_vel:z(-3)
             if (dist_NED:z() <= 1) then
               -- SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1500, 1000) --need to figure out servo timing and stuff for third cube
@@ -112,9 +113,9 @@ function update()
             end
           end
 
-          -- Stage5 : fly SW at 2m/s
+          -- Stage5 : fly W at 2m/s
           if (stage == 9) then
-            gcs:send_text(0, "stage 9")
+            --gcs:send_text(0, "stage 9")
             --target_vel:x(-1) --changed this 
             target_vel:y(-3)
             if (dist_NED:y() <= 1) then
@@ -123,17 +124,18 @@ function update()
           end
 
           if (stage == 10)then
-            gcs:send_text(0, "stage 10, descending")
+            --gcs:send_text(0, "stage 10, descending")
             target_vel:z(3)
             if (dist_NED:z() >= 2) then
               --SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1900, 1000)
-              gcs:send_text(0, "Servo stuff here")
+              gcs:send_text(0, "Cube 3 Dropped")
+              SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1900, 1000)
               stage = stage + 1
             end
           end
 
           if (stage == 11)then
-            gcs:send_text(0, "stage 11, ascending")
+            --gcs:send_text(0, "stage 11, ascending")
             target_vel:z(-3)
             if (dist_NED:z() <= 1) then
               -- SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1500, 1000)

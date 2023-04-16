@@ -34,11 +34,10 @@ function update()
         gcs:send_text(0, "High1")
         SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1900, 1000)
          --Drops arms, again check if servo needs to be defined 
-        SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1900, 1000)
     elseif rc:get_pwm(rc_arm_release_channel) < 1000 then
         gcs:send_text(0, "Low1")
         --SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1300, 1000) --Drops arms, again check if servo needs to be defined 
-        SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1100, 1000)
+        SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1100, 1000)
     elseif(rc:get_pwm(rc_arm_release_channel) == 1500) then
         gcs:send_text(0, "Neutral")
     else 
@@ -46,7 +45,10 @@ function update()
     end
 
     if rc:get_pwm(rc_upper_chanel) > 1800 then
-        SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1100, 1000)
+        SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1100, 1000)
+
+    elseif rc:get_pwm(rc_upper_chanel) < 1000 then
+        SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1900, 1000)
     end
 
 
