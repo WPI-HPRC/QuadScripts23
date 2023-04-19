@@ -58,7 +58,7 @@ function update()
           if (stage == 3) then
             --gcs:send_text(0, "stage 3")
             target_vel:x(3)
-            if (dist_NED:x() >= 8) then
+            if (dist_NED:x() >= 10) then
               stage = stage + 1
             end
           end
@@ -86,9 +86,9 @@ function update()
           -- Stage4 : fly SE at 2m/s
           if (stage == 6) then
             --gcs:send_text(0, "stage 6")
-            target_vel:x(-2)
-            target_vel:y(3) 
-            if (dist_NED:y() >= 6 and dist_NED:x() <= 1 ) then
+            target_vel:x(-3)
+            target_vel:y(2) 
+            if (dist_NED:y() >= 8.6 and dist_NED:x() <= 5 ) then
               SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1100, 1000)
               stage = stage + 1
             end
@@ -116,9 +116,9 @@ function update()
           -- Stage5 : fly W at 2m/s
           if (stage == 9) then
             --gcs:send_text(0, "stage 9")
-            --target_vel:x(-1) --changed this 
-            target_vel:y(-3)
-            if (dist_NED:y() <= 1) then
+            target_vel:x(-3) --changed this 
+            target_vel:y(-2)
+            if (dist_NED:y() <= 1 and dist_NED:x() <=1) then
               stage = stage + 1
             end
           end
