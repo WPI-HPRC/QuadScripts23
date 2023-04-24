@@ -1,9 +1,3 @@
--- Link to repo: https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_Scripting/examples/set-target-velocity.lua
---flies an obtuse triangle with 10m sides, descends and activates servo at each point before ascending to original alt
-
---Added basic servo functionality, not enough to actually drop cubes, but enough to test
---drops two cubes (maybe) 
-
 local takeoff_alt_above_home = 6
 local copter_guided_mode_num = 4
 local copter_rtl_mode_num = 6
@@ -18,35 +12,26 @@ local SERVO2 = 95
 local servo_channel_upper = SRV_Channels:find_channel(SERVO1)
 local servo_channel_lower = SRV_Channels:find_channel(SERVO2)
 
+local rc_arm_channel = 7
+local rc_arm_pwm = 1500
+
 -- the main update function that uses the takeoff and velocity controllers to fly a rough square pattern
 function update()
   if not arming:is_armed() then -- reset state when disarmed
     stage = 0
   else
-    
-      if (vehicle:get_mode() == POS_HOLD and stage == 0) then          -- change to guided mode
-        if (vehicle:set_mode(copter_guided_mode_num)) then     -- change to Guided mode
+    -- pwm = rc:get_pwm(rc_arm_channel)
+    -- if pwm and pwm > rc_arm_pwm then
+        --arming:arm() --will this continuously arm? 
+      if (stage == 0) then          -- change to guided mode
+        if (vehicle:get_mode() == copter_guided_mode_num) then     -- change to Guided mode, we may not actually need this 
           local curr_loc = ahrs:get_location()
           if curr_loc then
                 start_loc = curr_loc          -- record location when starting square
               end
           stage = stage + 3
         end
-      -- elseif (stage == 1) then      -- Stage1: takeoff
-      --   if (vehicle:start_takeoff(takeoff_alt_above_home)) then
-      --     stage = stage + 1
-      --   end
-      -- elseif (stage == 2) then      -- Stage2: check if vehicle has reached target altitude
-      --   local home = ahrs:get_home()
-      --   local curr_loc = ahrs:get_location()
-      --   if home and curr_loc then
-      --     local vec_from_home = home:get_distance_NED(curr_loc)
-      --     gcs:send_text(0, "alt above home: " .. tostring(math.floor(-vec_from_home:z())))
-      --     if (math.abs(takeoff_alt_above_home + vec_from_home:z()) < 1) then
-      --       stage = stage + 1
-      --       start_loc = curr_loc          -- record location when starting square
-      --     end
-      --   end
+        
       elseif (stage >= 3 and stage <= 11) then   -- fly a triangle using velocity controller
         --gcs:send_text(0, "Got here") 
         local curr_loc = ahrs:get_location()
@@ -86,8 +71,8 @@ function update()
           -- Stage4 : fly SE at 2m/s
           if (stage == 6) then
             --gcs:send_text(0, "stage 6")
-            target_vel:x(-3)
-            target_vel:y(2) 
+            target_vel:x(-2)
+            target_vel:y(3) 
             if (dist_NED:y() >= 8.6 and dist_NED:x() <= 5 ) then
               SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1100, 1000)
               stage = stage + 1
@@ -116,8 +101,8 @@ function update()
           -- Stage5 : fly W at 2m/s
           if (stage == 9) then
             --gcs:send_text(0, "stage 9")
-            target_vel:x(-3) --changed this 
-            target_vel:y(-2)
+            target_vel:x(-2) --changed this 
+            target_vel:y(-3)
             if (dist_NED:y() <= 1 and dist_NED:x() <=1) then
               stage = stage + 1
             end
@@ -158,7 +143,7 @@ function update()
         stage = stage + 1
         gcs:send_text(0, "finished square, switching to RTL")
       end
-    
+    --end
   end
 
   return update, 1000
