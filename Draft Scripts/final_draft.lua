@@ -11,6 +11,7 @@
     --Given current block diagram, what should our abort stage look like? 
     --Also mildly concered about using alt for nose_release
     --Does delaring alt in update vs functions change anything
+    --switching to abort may be bad
 
 --Flight Mode Numbers--
 local GUIDED_MODE = 4
@@ -104,7 +105,7 @@ function arm_release()
     if (button:get_button_state(ARM_BUTTON)) or rc_channel_F > PWM_HIGH then --we need to check how the button class decides that button is active 
         state = state + 1 
     else
-        state = 0 --initial_abort()
+        state = 0 --initial_abort(), this could actually be bad 
     end 
 
     return state
@@ -229,17 +230,15 @@ function update()
             rocket_flight()
         elseif state == 2 then --2 is nose_release
             nose_release(altitude)
-        elseif state == 3 then --2 is arm_release
+        elseif state == 3 then --3 is arm_release
             arm_release()
-        elseif state == 4 then --3 is checking
-            checking()
-        elseif state == 5 then --4 is ready
+        elseif state == 4 then --4 is checking
             check_ready(altitude)
-        elseif state == 6 then --5 is detach 
+        elseif state == 5 then --5 is detach 
             detach(acceleration)
-        elseif state == 7 then --6 is released                
+        elseif state == 6 then --6 is released                
             released(altitude)
-        elseif state == 8 then
+        elseif state == 7 then
             gcs:send_text(0, "Execute cube mission")
             if (stage == 0) then          
                 if (vehicle:get_mode() == GUIDED_MODE) then    --  to Guided mode
@@ -379,7 +378,6 @@ end
 rocket_flight() 
 nose_release(altitude)
 arm_release()
-checking()
 check_ready(altitude)
 detach(acceleration)
 released(altitude)
