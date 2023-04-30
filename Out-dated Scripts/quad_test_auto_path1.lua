@@ -1,6 +1,7 @@
 --Command simple path in auto mode--
     --fly manually to specific altitude and switch into auto mode 
     --autonomously flies 6 meters and lands
+    --Out-dated in terms of syntax, disregard as a reference
 
 local flight_distance = 6 --distance in m 
 --local current_location

@@ -1,3 +1,6 @@
+--Tests returning data autonmously--
+  --Referenced from this link: https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_Scripting/examples/6DoF_roll_pitch.lua
+
 --logs data--successful
 --local temperature 
 --function update()

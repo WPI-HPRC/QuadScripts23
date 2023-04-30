@@ -1,13 +1,6 @@
--- Link to repo: https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_Scripting/examples/set-target-velocity.lua
---command a Copter to takeoff to 10m and fly a square pattern
---
--- CAUTION: This script only works for Copter
--- this script waits for the vehicle to be armed and RC6 input > 1800 and then:
---    a) switches to Guided mode
---    b) takeoff to 10m
---    c) flies a 20m x 20m square pattern using the velocity controller
---    d) switches to RTL mode
-
+-- Link to reference script: https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_Scripting/examples/set-target-velocity.lua
+  --Triangle test 2 overrides this script 
+  
 local takeoff_alt_above_home = 6
 local copter_guided_mode_num = 4
 local copter_rtl_mode_num = 6

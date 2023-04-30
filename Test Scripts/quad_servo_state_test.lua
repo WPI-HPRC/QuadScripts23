@@ -1,5 +1,5 @@
+--Servo command and state machine testing--
 --commands servo (will eventually be done in auto), also checks limit switch 
---(Yes I was too lazy to make extra test files for each test...)
 
 
 local SERVO1 = 94

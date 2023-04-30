@@ -1,5 +1,4 @@
---commands servo (will eventually be done in auto), also checks limit switch 
---(Yes I was too lazy to make extra test files for each test...)
+--Various tests to test servo functionality for the retention system--
 
 local rc_cube_servo = 0 
 local rc_cube__switch = 0
@@ -10,8 +9,10 @@ local CUBE_SERVO_ON_TIMEOUT=0
 local servo_arm_output = 0
 local SERVO1 = 94
 local SERVO2 = 95
+local SERVOScrew = 97
 local servo_channel_upper = SRV_Channels:find_channel(SERVO1) --upper is servo 1
 local servo_channel_lower = SRV_Channels:find_channel(SERVO2)   -- lower is servo 2
+local servo_channel_screw = SRV_Channels:find_channel(SERVOScrew) 
 local PWM = 1900 
 local rc_arm_release_switch = 1500 
 local rc_arm_release_channel = 7
@@ -29,27 +30,27 @@ function update()
     --     gcs:send_text(0, "Servo Activate")
     -- end
 
-    --Arm Deploy Test--
-    if rc:get_pwm(rc_arm_release_channel) > 1800 then
-        gcs:send_text(0, "High1")
-        SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1900, 1000)
-         --Drops arms, again check if servo needs to be defined 
-    elseif rc:get_pwm(rc_arm_release_channel) < 1000 then
-        gcs:send_text(0, "Low1")
-        --SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1300, 1000) --Drops arms, again check if servo needs to be defined 
-        SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1100, 1000)
-    elseif(rc:get_pwm(rc_arm_release_channel) == 1500) then
-        gcs:send_text(0, "Neutral")
-    else 
-        gcs:send_text(0, "Neutral")
-    end
+    --Cube Deploy Test--
+    -- if rc:get_pwm(rc_arm_release_channel) > 1800 then
+    --     gcs:send_text(0, "High1")
+    --     SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1900, 1000)
+    --      --Drops arms, again check if servo needs to be defined 
+    -- elseif rc:get_pwm(rc_arm_release_channel) < 1000 then
+    --     gcs:send_text(0, "Low1")
+    --     --SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1300, 1000) --Drops arms, again check if servo needs to be defined 
+    --     SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1100, 1000)
+    -- elseif(rc:get_pwm(rc_arm_release_channel) == 1500) then
+    --     gcs:send_text(0, "Neutral")
+    -- else 
+    --     gcs:send_text(0, "Neutral")
+    -- end
 
-    if rc:get_pwm(rc_upper_chanel) > 1800 then
-        SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1100, 1000)
+    -- if rc:get_pwm(rc_upper_chanel) > 1800 then
+    --     SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1100, 1000)
 
-    elseif rc:get_pwm(rc_upper_chanel) < 1000 then
-        SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1900, 1000)
-    end
+    -- elseif rc:get_pwm(rc_upper_chanel) < 1000 then
+    --     SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1900, 1000)
+    -- end
 
 
 
@@ -63,9 +64,12 @@ function update()
     
     -- --Release From Retention System Test--
     -- gcs:send_text(0, "Start release")
-    -- servo:set_output(servo_release_output, PWM) --may need to change to timed
-    -- --make sure none of these are blocking 
-
+    if rc:get_pwm(rc_arm_release_channel) > 1800 then
+        gcs:send_text(0, "Start Release")
+        SRV_Channels:set_output_pwm_chan_timeout(servo_channel_screw, 1900, 5000) -- perhaps try with 10 seconds
+        gcs:send_text(0, "Screw Done")
+        arming:arm()
+    end
     --timer 
         -- time == something 
             --drone arms ; again will intiate throw mode too early 

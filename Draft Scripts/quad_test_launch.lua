@@ -1,3 +1,5 @@
+--Test Release Script for Test Launch 1: 3/18/2023--
+
 --Calibration on the ground (in manual mode) 
 --Once calibrated, switch into auto for whole flight 
     --Command motors to be off 

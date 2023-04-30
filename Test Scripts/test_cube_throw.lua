@@ -1,11 +1,12 @@
+--Tests cube mission out of throw mode--
+
 local takeoff_alt_above_home = 6
 local copter_guided_mode_num = 4
 local copter_rtl_mode_num = 6
 local POS_HOLD = 16
 local LAND_MODE = 9
 local stage = 0
-local start_loc  -- vehicle location when starting square
-local square_side_length = 20   -- length of each side of square
+local start_loc  -- vehicle location when starting triangle
 
 local SERVO1 = 94
 local SERVO2 = 95
@@ -141,7 +142,7 @@ function update()
       elseif (stage == 12) then  -- Stage7: change to RTL mode
         vehicle:set_mode(LAND_MODE)
         stage = stage + 1
-        gcs:send_text(0, "finished square, switching to RTL")
+        gcs:send_text(0, "finished triangle, switching to RTL")
       end
     --end
   end

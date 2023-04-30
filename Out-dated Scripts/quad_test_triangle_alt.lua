@@ -1,6 +1,7 @@
 --fly triangle autonoumously-- adjust altitude values depending on how payload wants to test
---after this mode passes, test throw mode 
---Tests with altitude change 
+    --after this mode passes, test throw mode 
+    --Tests with altitude change 
+    --Out-dated in terms of syntax, disregard as a reference
 
 
 local AUTO_MODE = 3 --need to set values

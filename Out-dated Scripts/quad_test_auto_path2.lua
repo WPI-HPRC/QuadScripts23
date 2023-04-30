@@ -1,6 +1,7 @@
 --Command simple path in auto mode but with rc start--
     --fly manually to specific altitude and switch into auto mode 
     --autonomously flies 20 meters and lands
+    ----Out-dated in terms of syntax, disregard as a reference
 
 local flight_distance = 10
 local state = 0

@@ -1,5 +1,5 @@
---This is the cuurent draft for the final release script--
---Transitions into the cube mission but does not integrate the cube mission itself 
+--This is the current draft for the final script--
+    --Includes integration of release script and cube mission script
 
 --Current questions/unknowns that Colette can think of for testing, etc: 
     --Will arming for an instant in check_ready() trigger throwmode prematurely? 
@@ -59,8 +59,10 @@ local ARM_BUTTON = 1
 --General Declarations--
 local state = 1
 local saved_state 
+local stage = 0
 local altitude
 local acceleration
+local start_loc
 
 --State Functions--
 
@@ -164,7 +166,7 @@ function released(relative_alt)
         arming:arm()
     end
 
-    if vehicle:get_mode() == GUIDED_MODE then -- This will need to be changed once cube mission incorporated 
+    if arming:is_armed() then -- This will need to be changed once cube mission incorporated 
         state = state + 1 --once cube mission integrated, this will switch the into another state that begins the cube mission, auto
     else
         state = -1 --secondary_abort
@@ -239,6 +241,119 @@ function update()
             released(altitude)
         elseif state == 8 then
             gcs:send_text(0, "Execute cube mission")
+            if (stage == 0) then          
+                if (vehicle:get_mode() == GUIDED_MODE) then    --  to Guided mode
+                  local curr_loc = ahrs:get_location()
+                  if curr_loc then
+                        start_loc = curr_loc          -- record start location
+                      end
+                  stage = stage + 3
+                end
+                
+              elseif (stage >= 3 and stage <= 11) then   -- fly a triangle using velocity controller 
+                local curr_loc = ahrs:get_location()
+                local target_vel = Vector3f()           -- create velocity vector
+                if (start_loc and curr_loc) then
+                  local dist_NED = start_loc:get_distance_NED(curr_loc) 
+        
+                  --Fly to first point (N) at 2m/s
+                  if (stage == 3) then
+                    target_vel:x(3)
+                    if (dist_NED:x() >= 10) then
+                      stage = stage + 1
+                    end
+                  end
+        
+                  --Descends and drops cube 1
+                  if (stage == 4) then
+                    target_vel:z(3)
+                    if (dist_NED:z() >= 2) then 
+                      SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1100, 1000) --drops when PWM is high
+                      gcs:send_text(0, "Cube 1 Dropped")
+                      stage = stage + 1
+                    end
+                  end
+        
+                  --Ascends and resets servos
+                  if (stage == 5)then
+                    target_vel:z(-3)
+                    if (dist_NED:z() <= 1) then
+                      SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1900, 500) --reset lower servo quickly
+                      SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1900, 1000) --drop upper cube
+                      stage = stage + 1
+                    end
+                  end
+        
+                  --Fly to second point SE at 2m/s
+                  if (stage == 6) then
+                    target_vel:x(-3)
+                    target_vel:y(3) 
+                    if (dist_NED:y() >= 8.6 and dist_NED:x() <= 5 ) then
+                      SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1100, 1000) --resets upper servo
+                      stage = stage + 1
+                    end
+                  end
+
+                   --Descends and drops cube 2
+                  if (stage == 7)then
+                    target_vel:z(3)
+                    if (dist_NED:z() >= 2) then
+                      SRV_Channels:set_output_pwm_chan_timeout(servo_channel_lower, 1100, 1000) --drop second cube 
+                      gcs:send_text(0, "Cube 2 Dropped")
+                      stage = stage + 1
+                    end
+                  end
+                  
+                  --Ascends
+                  if (stage == 8)then
+                    target_vel:z(-3)
+                    if (dist_NED:z() <= 1) then
+                      stage = stage + 1
+                    end
+                  end
+        
+                  -- Fly to third point SW at 2m/s
+                  if (stage == 9) then
+                    target_vel:x(-3) 
+                    target_vel:y(-3)
+                    if (dist_NED:y() <= 1 and dist_NED:x() <=1) then
+                      stage = stage + 1
+                    end
+                  end
+        
+                --Descends and drops cube 3
+                  if (stage == 10)then
+                    target_vel:z(3)
+                    if (dist_NED:z() >= 2) then
+                      gcs:send_text(0, "Cube 3 Dropped")
+                      SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1900, 1000)
+                      stage = stage + 1
+                    end
+                  end
+        
+                  -- Ascends once again
+                  if (stage == 11)then
+                    target_vel:z(-3)
+                    if (dist_NED:z() <= 1) then
+                      stage = stage + 1
+                    end
+                  end
+        
+                  -- sends velocity request
+                  if (vehicle:set_target_velocity_NED(target_vel)) then   -- send target velocity to vehicle
+                    gcs:send_text(0, "pos:" .. tostring(math.floor(dist_NED:x())) .. "," .. tostring(math.floor(dist_NED:y())) .. " sent vel x:" .. tostring(target_vel:x()) .. " y:" .. tostring(target_vel:y()))
+                  else
+                    gcs:send_text(0, "failed to execute velocity command")
+                  end
+                else
+                  gcs:send_text(0, "position failed")
+                end
+
+              --Switches to land mode 
+              elseif (stage == 12) then  
+                vehicle:set_mode(LAND_MODE)
+                stage = stage + 1
+              end
         elseif state == 0 then --initial abort
             initial_abort() --state == 0
         elseif state == -1 then

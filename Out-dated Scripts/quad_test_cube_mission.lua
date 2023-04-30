@@ -1,4 +1,6 @@
---test cube mission without throw mode--
+--Test cube mission without throw mode--
+    --Out-dated in terms of syntax, disregard as a reference
+
 local CUBE_SERVO_CHANNEL = 0 --need to set values
 local CUBE_SERVO_ON_PWM = 0
 local CUBE_SERVO_ON_TIMEOUT = 0

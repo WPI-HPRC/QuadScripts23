@@ -1,6 +1,5 @@
 --Updated Test Launch Release Script (Following 3/18 Launch)--
-
---Add description here
+    --Draft script effectively overrides this
 
 local BRAKE_MODE = 17 
 local AUTO_MODE = 3

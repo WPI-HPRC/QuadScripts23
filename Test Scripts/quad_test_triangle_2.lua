@@ -1,8 +1,5 @@
+--Flies an obtuse triangle with 10m sides, descends and activates servo at each point before ascending to original alt--
 -- Link to repo: https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_Scripting/examples/set-target-velocity.lua
---flies an obtuse triangle with 10m sides, descends and activates servo at each point before ascending to original alt
-
---Added basic servo functionality, not enough to actually drop cubes, but enough to test
---drops two cubes (maybe) 
 
 --THIS IS THE CURRENT ONE THAT WORKS--
 
@@ -12,8 +9,7 @@ local copter_rtl_mode_num = 6
 local POS_HOLD = 16
 local LAND_MODE = 9
 local stage = 0
-local start_loc  -- vehicle location when starting square
-local square_side_length = 20   -- length of each side of square
+local start_loc  -- vehicle location when starting triangle
 
 local SERVO1 = 94
 local SERVO2 = 95
@@ -144,7 +140,7 @@ function update()
       elseif (stage == 12) then  -- Stage7: change to RTL mode
         vehicle:set_mode(LAND_MODE)
         stage = stage + 1
-        gcs:send_text(0, "finished square, switching to RTL")
+        gcs:send_text(0, "finished triangle, switching to RTL")
       end
     
   end

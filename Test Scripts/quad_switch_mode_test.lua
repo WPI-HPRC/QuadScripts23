@@ -1,3 +1,5 @@
+--Mode switch based on altitude test--
+
 local AUTO_MODE = 0
 local HOLD_POSITION = 0 
 local THROW_MODE = 18

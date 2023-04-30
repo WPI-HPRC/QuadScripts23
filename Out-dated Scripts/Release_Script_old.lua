@@ -1,4 +1,5 @@
 -- Lua script to control the release mechanisms and timing of the quadcopter payload -- 
+    --More recent test scripts override this one 
 
 local target_drop_height = 500 -- random number that will get changed
 local copter_brake_mode_num = 2 -- need to get actual number for brake mode  

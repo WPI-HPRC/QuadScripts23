@@ -1,3 +1,4 @@
+--Tests arming and switching modes autonomously--
 
 local AUTO_MODE = 3
 

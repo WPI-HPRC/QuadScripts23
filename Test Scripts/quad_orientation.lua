@@ -1,3 +1,5 @@
+--Returns whether or not the quad is upside down--
+  --Reference: https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_Scripting/examples/6DoF_roll_pitch.lua
 local roll
 local pitch
 local yaw

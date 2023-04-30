@@ -1,3 +1,5 @@
+--Tests ability to record verticle velocity for test launch 1-- 
+
 local velocity = Vector3f()
 --local location
 
