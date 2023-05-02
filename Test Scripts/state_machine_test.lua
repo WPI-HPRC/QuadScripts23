@@ -10,9 +10,8 @@ local rc_channel_C = 0  --Confirms go for drop if arm limit switch fails: flippe
 local rc_channel_D = 0  --Switches to cameras to observe arm deploy: flipped at arm_release()
 local rc_channel_F = 0  --Switches out of nose_release() to arm_release(): flipped upon confirmation of payload parachute inflation
 
-local PWM_HIGH = 1900 --these may need to be reset based on more accurate threshold values
-local PWM_NEUTRAL = 1500
-local PWM_LOW = 1100
+local PWM_HIGH = 1800 --these may need to be reset based on more accurate threshold values
+local PWM_LOW = 1200
 
 --Notes on Servo Control:
     --If S1 and S2 are in neutral position, control servos manually
@@ -50,8 +49,6 @@ function start_stage()
     saved_state = state
         if rc:get_pwm(rc_channel_S2) >= PWM_HIGH then --change to when payload chutes are deployed 
             state = state + 1 
-        else
-            state = 0; --initial_abort() 
         end
     gcs:send_text(0, state)   
     return state 
@@ -80,7 +77,10 @@ function check_arming_test(relative_alt)
     gcs:send_text(0, relative_alt)  
 
     local armSuccess = false
-    arming:arm()
+    while armSuccess == false do
+        gcs:send_text(0, "attempting arm")
+        arming:arm()
+      end 
 
     if vehicle:is_armed() then --will this make throwmode initiate? 
         armSuccess = true
@@ -90,8 +90,6 @@ function check_arming_test(relative_alt)
     if armSuccess == true then 
         gcs:send_text(0, "arming success")
         state = state + 1
-    else
-        state = 0; --initial_abort()
     end
     gcs:send_text(0, state)  
     return state   
@@ -106,8 +104,6 @@ function read_accel(acceleration)
     if rc_channel_D >= PWM_HIGH then
         gcs:send_text(0, "Switching stages") 
         state = state + 1
-    else
-        state = 0 --initial_abort()
 
     end    
     gcs:send_text(0, state)  
@@ -115,13 +111,6 @@ function read_accel(acceleration)
     return state 
 end
 
--- Initial Abort: 
-    --Abort stage if drone still attached to the retention system
-    --Just disarms
-function initial_abort()
-    gcs:send_text(0, "Abort")
-    return state 
-end
 
 function update()
 
@@ -168,12 +157,6 @@ function update()
     elseif rc:get_pwm(rc_channel_S1) == PWM_NEUTRAL and rc:get_pwm(rc_channel_S1) == PWM_NEUTRAL then
         if rc_channel_A >= PWM_HIGH then
             SRV_Channels:set_output_pwm_chan_timeout(servo_channel_nosecone, 1100, 1000) 
-        end
-        if rc_channel_D >= PWM_HIGH then
-            SRV_Channels:set_output_pwm_chan_timeout(servo_channel_arm, 1100, 1000)
-        end
-        if rc_channel_C >= PWM_HIGH then
-            SRV_Channels:set_output_pwm_chan_timeout(servo_channel_screw, 1100, 5000) 
         end
     end
 

@@ -5,13 +5,11 @@
     --Will arming for an instant in check_ready() trigger throwmode prematurely? 
     --Does the servo function act as an adequate timer for the quad release? 
     --To many RC switches? 
-    --DOES THROW MODE EVEN WORK?? 
     --Switching to servo manual then switching back into the state machine
     --Mildly concerned about rc switches interferring with eachother 
     --Given current block diagram, what should our abort stage look like? 
     --Also mildly concered about using alt for nose_release
     --Does delaring alt in update vs functions change anything
-    --switching to abort may be bad
 
 --Flight Mode Numbers--
 local GUIDED_MODE = 4
@@ -32,9 +30,9 @@ local rc_channel_C = 0  --Confirms go for drop if arm limit switch fails: flippe
 local rc_channel_D = 0  --Switches to cameras to observe arm deploy: flipped at arm_release()
 local rc_channel_F = 0  --Switches out of nose_release() to arm_release(): flipped upon confirmation of payload parachute inflation
 
-local PWM_HIGH = 1900 --these may need to be reset based on more accurate threshold values
-local PWM_NEUTRAL = 1500
-local PWM_LOW = 1100
+local PWM_HIGH = 1800 --these may need to be reset based on more accurate threshold values
+--Add thresholds for neutrals
+local PWM_LOW = 1200
 
 --Notes on Servo Control:
     --If S1 and S2 are in neutral position, control servos manually
@@ -75,8 +73,6 @@ function rocket_flight()
     saved_state = state
         if rc:get_pwm(rc_channel_S2) >= PWM_HIGH then --change to when payload chutes are deployed 
             state = state + 1 
-        else
-            state = 0; --initial_abort()
         end
     return state 
 end
@@ -86,7 +82,7 @@ end
 function nose_release(relative_alt)
     gcs:send_text(0, "Nose Release Stage")
     saved_state = state
-    if((relative_alt <= main_deploy_alt) or rc_channel_F >= PWM_HIGH) then
+    if(relative_alt <= main_deploy_alt) then
         SRV_Channels:set_output_pwm_chan_timeout(servo_channel_nosecone, 1100, 1000) --need to make sure this is set to the right value
         state = state + 1 
     end
@@ -104,9 +100,7 @@ function arm_release()
     
     if (button:get_button_state(ARM_BUTTON)) or rc_channel_F > PWM_HIGH then --we need to check how the button class decides that button is active 
         state = state + 1 
-    else
-        state = 0 --initial_abort(), this could actually be bad 
-    end 
+    end
 
     return state
 end
@@ -120,7 +114,11 @@ function check_ready(relative_alt)
     saved_state = state  
 
     local armSuccess = false
-    arming:arm()
+
+    while armSuccess == false do
+      gcs:send_text(0, "attempting arm")
+      arming:arm()
+    end 
 
     if vehicle:is_armed() then --will this make throwmode initiate? 
         armSuccess = true
@@ -129,8 +127,6 @@ function check_ready(relative_alt)
 
     if relative_alt < target_drop_height and armSuccess == true then 
         state = state + 1 
-    else
-        state = 0; --initial_abort()
     end
     return state   
 end 
@@ -149,8 +145,6 @@ function detach(acceleration)
     if (acceleration < quad_accel_threshold) and vehicle:is_armed() then
         gcs:send_text(0, "Switching stages") 
         state = state + 1
-    else
-        state = 0 --initial_abort()
 
     end     
 
@@ -169,31 +163,8 @@ function released(relative_alt)
 
     if arming:is_armed() then -- This will need to be changed once cube mission incorporated 
         state = state + 1 --once cube mission integrated, this will switch the into another state that begins the cube mission, auto
-    else
-        state = -1 --secondary_abort
     end
-    
     return state 
-end
-
--- Initial Abort: 
-    --Abort stage if drone still attached to the retention system
-    --Just disarms
-function initial_abort()
-    gcs:send_text(0, "Initial Abort")
-    arming:disarm()
-    return state 
-end
-
--- Secondary Abort: 
-    --Abort state if the drone is in free fall or during cube mission
-    --May be better to just switch to manual 
-function secondary_abort() 
-    gcs:send_text(0, "Secondary Abort")
-    vehicle:set_mode(BRAKE_MODE) --this is not correct
-    vehicle:set_mode(LAND_MODE)
-    return state 
-
 end
 
 function update()
@@ -223,7 +194,7 @@ function update()
     if not vehicle:get_mode() == THROW_MODE then --check that vehicle is in throw mode 
         vehicle:set_mode(THROW_MODE) 
     
-    elseif rc:get_pwm(rc_channel_S1) >= PWM_HIGH and rc:get_pwm(rc_channel_S1) <= PWM_LOW then --check syntax
+    elseif rc:get_pwm(rc_channel_S1) >= PWM_HIGH and rc:get_pwm(rc_channel_S2) <= PWM_LOW then --check syntax
 
         --State Machine--
         if state == 1 then 
@@ -353,22 +324,12 @@ function update()
                 vehicle:set_mode(LAND_MODE)
                 stage = stage + 1
               end
-        elseif state == 0 then --initial abort
-            initial_abort() --state == 0
-        elseif state == -1 then
-            secondary_abort()
         
         end
 
-    elseif rc:get_pwm(rc_channel_S1) == PWM_NEUTRAL and rc:get_pwm(rc_channel_S1) == PWM_NEUTRAL then
-        if rc_channel_A >= PWM_HIGH then
+    elseif (rc:get_pwm(rc_channel_S1) > 1300 and rc:get_pwm(rc_channel_S1) < 1600) and (rc:get_pwm(rc_channel_S2) > 1300 and rc:get_pwm(rc_channel_S2) < 1600) then
+        if rc_channel_B >= PWM_HIGH then
             SRV_Channels:set_output_pwm_chan_timeout(servo_channel_nosecone, 1100, 1000) 
-        end
-        if rc_channel_D >= PWM_HIGH then
-            SRV_Channels:set_output_pwm_chan_timeout(servo_channel_arm, 1100, 1000)
-        end
-        if rc_channel_C >= PWM_HIGH then
-            SRV_Channels:set_output_pwm_chan_timeout(servo_channel_screw, 1100, 5000) 
         end
     end
 
@@ -381,8 +342,6 @@ arm_release()
 check_ready(altitude)
 detach(acceleration)
 released(altitude)
-initial_abort()
-secondary_abort()
 
 
 return update()
