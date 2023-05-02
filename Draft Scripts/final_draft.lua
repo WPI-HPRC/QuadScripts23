@@ -23,12 +23,11 @@ local main_deploy_alt = 0 --Needs to be set
 local quad_accel_threshold = 9.8 -- Correct value TBD
 
 --RC Channel Values--
-local rc_channel_S1 = 0 --Starts the script: flipped upon launch
-local rc_channel_S2 = 0 --Switches out of rocket_flight(): flipped at apogee 
-local rc_channel_A = 0  --Switches to cameras to observe arm deploy: flipped at arm_release()
-local rc_channel_C = 0  --Confirms go for drop if arm limit switch fails: flipped once visual confirmation received
-local rc_channel_D = 0  --Switches to cameras to observe arm deploy: flipped at arm_release()
-local rc_channel_F = 0  --Switches out of nose_release() to arm_release(): flipped upon confirmation of payload parachute inflation
+local rc_channel_S1 = 10 --Starts the script: flipped upon launch
+local rc_channel_S2 = 11 --Switches out of rocket_flight(): flipped at apogee 
+local rc_channel_B = 6  --not assigned
+local rc_channel_E = 5 --not assigned
+local rc_channel_F = 8  --Switches out of nose_release() to arm_release(): flipped upon confirmation of payload parachute inflation
 
 local PWM_HIGH = 1800 --these may need to be reset based on more accurate threshold values
 --Add thresholds for neutrals
@@ -52,6 +51,8 @@ local servo_channel_lower = SRV_Channels:find_channel(SERVO_CUBE_LOWER)
 local servo_channel_nosecone = SRV_Channels:find_channel(SERVO_NOSECONE)
 local servo_channel_screw = SRV_Channels:find_channel(SERVO_SCREW)
 local servo_channel_arm = SRV_Channels:find_channel(SERVO_ARM)
+
+local NOSECONE_PWM = 0 --set at IREC
 
 local ARM_BUTTON = 1
 
@@ -83,7 +84,7 @@ function nose_release(relative_alt)
     gcs:send_text(0, "Nose Release Stage")
     saved_state = state
     if(relative_alt <= main_deploy_alt) then
-        SRV_Channels:set_output_pwm_chan_timeout(servo_channel_nosecone, 1100, 1000) --need to make sure this is set to the right value
+        SRV_Channels:set_output_pwm_chan_timeout(servo_channel_nosecone, NOSECONE_PWM, 1000) --need to make sure this is set to the right value
         state = state + 1 
     end
 
@@ -135,14 +136,14 @@ end
     --Detaches the quad from the retention system through a timed lead screw
     --Arms the quad 
     --Fly child 
-function detach(acceleration)
+function detach()
     gcs:send_text(0, "Detach Stage")
     saved_state = state
       
     SRV_Channels:set_output_pwm_chan_timeout(servo_channel_screw, 1100, 5000) --delays for 5 seconds
     arming:arm()
 
-    if (acceleration < quad_accel_threshold) and vehicle:is_armed() then
+    if (rc:get_pwm(rc_channel_E) > PWM_HIGH) and vehicle:is_armed() then
         gcs:send_text(0, "Switching stages") 
         state = state + 1
 
@@ -177,24 +178,19 @@ function update()
             altitude = position:alt() - home:alt() 
         end
 
-        acceleration = ahrs:get_accel() --check correct 
     end
     
 
     --RC Switch Settings--
     if rc:get_pwm(rc_channel_S1) <= PWM_LOW and rc:get_pwm(rc_channel_S2) <= PWM_LOW then --reset switch 
-        state = 1; 
-    end
-
-    if rc:get_pwm(rc_channel_S1) <= PWM_LOW and rc:get_pwm(rc_channel_S2) >= PWM_HIGH then --reset switch 
-        state = saved_state; 
+        state = 1; --resets state machine
     end
 
     --Script for State Machine Begins--
     if not vehicle:get_mode() == THROW_MODE then --check that vehicle is in throw mode 
         vehicle:set_mode(THROW_MODE) 
     
-    elseif rc:get_pwm(rc_channel_S1) >= PWM_HIGH and rc:get_pwm(rc_channel_S2) <= PWM_LOW then --check syntax
+    elseif rc:get_pwm(rc_channel_S1) >= PWM_HIGH then --check syntax
 
         --State Machine--
         if state == 1 then 
@@ -206,7 +202,7 @@ function update()
         elseif state == 4 then --4 is checking
             check_ready(altitude)
         elseif state == 5 then --5 is detach 
-            detach(acceleration)
+            detach()
         elseif state == 6 then --6 is released                
             released(altitude)
         elseif state == 7 then
@@ -229,7 +225,7 @@ function update()
                   --Fly to first point (N) at 2m/s
                   if (stage == 3) then
                     target_vel:x(3)
-                    if (dist_NED:x() >= 10) then
+                    if (dist_NED:x() >= 200) then
                       stage = stage + 1
                     end
                   end
@@ -258,7 +254,7 @@ function update()
                   if (stage == 6) then
                     target_vel:x(-3)
                     target_vel:y(3) 
-                    if (dist_NED:y() >= 8.6 and dist_NED:x() <= 5 ) then
+                    if (dist_NED:y() >= 173.2 and dist_NED:x() <= 100 ) then
                       SRV_Channels:set_output_pwm_chan_timeout(servo_channel_upper, 1100, 1000) --resets upper servo
                       stage = stage + 1
                     end
@@ -328,8 +324,8 @@ function update()
         end
 
     elseif (rc:get_pwm(rc_channel_S1) > 1300 and rc:get_pwm(rc_channel_S1) < 1600) and (rc:get_pwm(rc_channel_S2) > 1300 and rc:get_pwm(rc_channel_S2) < 1600) then
-        if rc_channel_B >= PWM_HIGH then
-            SRV_Channels:set_output_pwm_chan_timeout(servo_channel_nosecone, 1100, 1000) 
+        if rc_channel_C >= PWM_HIGH then
+            SRV_Channels:set_output_pwm_chan_timeout(servo_channel_nosecone, NOSECONE_PWM, 1000) 
         end
     end
 
@@ -340,7 +336,7 @@ rocket_flight()
 nose_release(altitude)
 arm_release()
 check_ready(altitude)
-detach(acceleration)
+detach()
 released(altitude)
 
 
