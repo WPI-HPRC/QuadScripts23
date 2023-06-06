@@ -1,15 +1,4 @@
---This is the current draft for the final script--
-    --Includes integration of release script and cube mission script
-
---Current questions/unknowns that Colette can think of for testing, etc: 
-    --Will arming for an instant in check_ready() trigger throwmode prematurely? 
-    --Does the servo function act as an adequate timer for the quad release? 
-    --Too many RC switches? 
-    --Switching to servo manual then switching back into the state machine
-    --Mildly concerned about rc switches interferring with eachother 
-    --Given current block diagram, what should our abort stage look like? 
-    --Also mildly concered about using alt for nose_release
-    --RC SWITCHES ARE NOT FINALIZED
+--Tests modified retention script into cube mission to ensure clean transition--
 
 --Flight Mode Numbers--
 local GUIDED_MODE = 4
@@ -83,8 +72,8 @@ function nose_release()
       local home = ahrs:get_home()
       if position and home then
           local relative_alt = position:alt() - home:alt() 
-          if(relative_alt <= main_deploy_alt) then
-                  SRV_Channels:set_output_pwm_chan_timeout(servo_channel_nosecone, NOSECONE_PWM, 1000) --need to make sure this is set to the right value
+          if(relative_alt <= main_deploy_alt) then --change to RC
+                  --SRV_Channels:set_output_pwm_chan_timeout(servo_channel_nosecone, NOSECONE_PWM, 1000) --need to make sure this is set to the right value
                   state = state + 1 
               end
       end
@@ -97,9 +86,9 @@ end
     --Confirms release and switches states through button or RC switch
 function arm_release()
     gcs:send_text(0, "Arm Release Stage")
-    SRV_Channels:set_output_pwm_chan_timeout(servo_channel_arm, 1100, 1000) --make sure pwm value is correct
+    --SRV_Channels:set_output_pwm_chan_timeout(servo_channel_arm, 1100, 1000) --make sure pwm value is correct
     
-    if (button:get_button_state(ARM_BUTTON)) or rc_channel_F > PWM_HIGH then --we need to check how the button class decides that button is active 
+    if rc_channel_F > PWM_HIGH then --we need to check how the button class decides that button is active 
         state = state + 1 
     end
 
@@ -119,6 +108,7 @@ function check_ready()
     if position and home then
 
       local relative_alt = position:alt() - home:alt() 
+      gcs:send_text(0, string.format("Relative ALt: %.1f", relative_alt))  
       local armSuccess = false
 
       gcs:send_text(0, "attempting arm")
@@ -130,7 +120,7 @@ function check_ready()
           arming:disarm()
       end
 
-      if relative_alt < target_drop_height and armSuccess == true then 
+      if  armSuccess == true then 
           state = state + 1 
           return state   
       end
@@ -147,7 +137,7 @@ end
 function detach()
     gcs:send_text(0, "Detach Stage")
       
-    SRV_Channels:set_output_pwm_chan_timeout(servo_channel_screw, 1100, 5000) --delays for 5 seconds
+    --SRV_Channels:set_output_pwm_chan_timeout(servo_channel_screw, 1100, 5000) --delays for 5 seconds
     arming:arm()
 
     if (rc:get_pwm(rc_channel_E) > PWM_HIGH) and arming:is_armed() then
@@ -168,13 +158,15 @@ function released() --figure this out, should have altitude readings? This state
         arming:arm()
     end
 
-    -- if arming:is_armed() then -- This will need to be changed once cube mission incorporated 
-    --     state = state + 1 --once cube mission integrated, this will switch the into another state that begins the cube mission, auto
-    -- end
-    if vehicle:get_mode() == GUIDED_MODE then --ensures quad is in guided mode 
-      state = state + 1
+    if arming:is_armed() then -- This will need to be changed once cube mission incorporated 
+        gcs:send_text(0, "YEET HIM")
+         --once cube mission integrated, this will switch the into another state that begins the cube mission, auto
+    end
+
+    if vehicle:get_mode() == GUIDED_MODE then 
+        state = state + 1
     end 
-    
+
     return state 
 end
 
