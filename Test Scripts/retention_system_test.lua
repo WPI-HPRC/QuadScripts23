@@ -2,25 +2,25 @@
 
 --Please disable GPS requirements for arming 
 
+--Flight Mode Numbers--
 local GUIDED_MODE = 4
 local THROW_MODE = 18
 local LAND_MODE = 9 
 local BRAKE_MODE = 17 
 
 --Threshold Constants--
-local target_drop_height = 15240 --500ft expressed in cm 
--- local main_deploy_alt = 0 --Needs to be set 
--- local quad_accel_threshold = 9.8 -- Correct value TBD
+local target_drop_height = 200 --Units in ft? 
+local main_deploy_alt = 1400 --Was originally 400 in Cam's code but may have been a typo
+--Also, since the nosecone pins retract before the black power ejects the payload, should this value be slighty greater than 1400ft? 
 
---RC Channel Values--
-local rc_channel_S1 = 10 --Starts the script: flipped upon launch
+--RC Channel Values-- CHANGE
+local rc_channel_S1 = 10 --Starts the state machine: flipped upon launch
 local rc_channel_S2 = 11 --Switches out of rocket_flight(): flipped at apogee 
 local rc_channel_B = 6  --not assigned
-local rc_channel_E = 5 --manual nosecone switch
-local rc_channel_F = 8  --Switches out of nose_release() to arm_release(): flipped upon confirmation of payload parachute inflation
+local rc_channel_F = 8  --Secondary switch for arm release if limit switch fails: flipped upon confirmation of payload parachute inflation, also used for manual mode as well
+local rc_channel_C = 0 --NEEDS TO BE SET, releases the arms upon visual confirmation of parachute deployment
 
 local PWM_HIGH = 1800 --these may need to be reset based on more accurate threshold values
---Add thresholds for neutrals
 local PWM_LOW = 1200
 
 --Notes on Servo Control: (need to edit to make more accurate)
@@ -43,6 +43,8 @@ local servo_channel_screw = SRV_Channels:find_channel(SERVO_SCREW)
 local servo_channel_arm = SRV_Channels:find_channel(SERVO_ARM)
 
 local NOSECONE_PWM = 0 --set at IREC
+local ARM_PWM = 1100 --set upon tests
+local LEADSCREW_PWM = 1100 --set upon tests
 
 local ARM_BUTTON = 1
 
@@ -50,6 +52,12 @@ local ARM_BUTTON = 1
 local state = 1
 local stage = 0
 local start_loc
+local firstRun = true
+
+local startTime = 0
+local endTime = 0
+local gpsTime = 0
+local timeDiff = 0
 
 --State Functions--
 
@@ -58,7 +66,7 @@ local start_loc
     --Switches to arm_release when S2 switch triggered
 function rocket_flight()
     gcs:send_text(0, "Rocket Flight Stage")
-        if rc:get_pwm(rc_channel_S2) >= 1300 then --change to when payload chutes are deployed 
+        if rc:get_pwm(rc_channel_S2) >= 1300 then 
             state = state + 1 
         end
     return state 
@@ -68,17 +76,17 @@ end
     --Releases the retention system from the nosecone
 function nose_release()
     gcs:send_text(0, "Nose Release Stage")
-    if ahrs:healthy() then
-      local position = ahrs:get_position()
-      local home = ahrs:get_home()
-      if position and home then
-          local relative_alt = position:alt() - home:alt() 
-          if(relative_alt <= main_deploy_alt) then --change to RC 
-                  SRV_Channels:set_output_pwm_chan_timeout(servo_channel_nosecone, NOSECONE_PWM, 1000) --need to make sure this is set to the right value
+    -- if ahrs:healthy() then
+    --   local position = ahrs:get_position()
+    --   local home = ahrs:get_home()
+    --   if position and home then
+    --       local relative_alt = position:alt() - home:alt() 
+          if(rc:get_pwm(rc_channel_C) < PWM_LOW) then 
+                  SRV_Channels:set_output_pwm_chan_timeout(servo_channel_nosecone, NOSECONE_PWM, 1000) 
                   state = state + 1 
-              end
-      end
-    end
+          end
+    --   end
+    -- end
     return state 
 end
 
@@ -87,9 +95,12 @@ end
     --Confirms release and switches states through button or RC switch
 function arm_release()
     gcs:send_text(0, "Arm Release Stage")
-    SRV_Channels:set_output_pwm_chan_timeout(servo_channel_arm, 1100, 1000) --make sure pwm value is correct
-    
-    if (button:get_button_state(ARM_BUTTON)) or rc_channel_F > PWM_HIGH then --we need to check how the button class decides that button is active 
+
+    if rc:get_pwm(rc_channel_C) > PWM_HIGH then --Allows for visual confirmation of parachute deployment 
+      SRV_Channels:set_output_pwm_chan_timeout(servo_channel_arm, ARM_PWM, 1000) 
+    end
+
+    if (rc:get_pwm(rc_channel_F) > PWM_HIGH or not button:get_button_state(ARM_BUTTON)) then --we need to check how the button class decides that button is active 
         state = state + 1 
     end
 
@@ -102,32 +113,32 @@ end
 function check_ready()
   gcs:send_text(0, "Ready Stage") 
 
-  if ahrs:healthy() then
-    local position = ahrs:get_position()
-    local home = ahrs:get_home()
+--   if ahrs:healthy() then
+--     local position = ahrs:get_position()
+--     local home = ahrs:get_home()
 
-    if position and home then
+--     if position and home then
 
-      local relative_alt = position:alt() - home:alt() 
-      gcs:send_text(0, string.format("Relative ALt: %.1f", relative_alt)) 
+--       local relative_alt = position:alt() - home:alt() 
       local armSuccess = false
 
-      gcs:send_text(0, "attempting arm")
+      gcs:send_text(0, "Attempting arm")
       arming:arm()
     
 
       if arming:is_armed() then --will this make throwmode initiate? 
           armSuccess = true
           arming:disarm()
+          gcs:send_text(0, "Arm success, disarming")
       end
 
       if armSuccess == true then 
           state = state + 1 
           return state   
       end
-    end
+    -- end
 
-  end
+    -- end
     
 end 
 
@@ -138,13 +149,27 @@ end
 function detach()
     gcs:send_text(0, "Detach Stage")
       
-    SRV_Channels:set_output_pwm_chan_timeout(servo_channel_screw, 1100, 5000) --delays for 5 seconds
+    SRV_Channels:set_output_pwm_chan_timeout(servo_channel_screw, LEADSCREW_PWM, 5000) 
+
+    if firstRun then 
+      startTime = gps:time_week_ms(0) 
+      gcs:send_text(0, "First Run")
+      firstRun = false
+      return state 
+
+    else 
+      endTime = gps:time_week_ms(0)
+      timeDiff = endTime - startTime
+      if timeDiff < 5000 then --Where 5000 ms is the time delay
+        return state --make sure the structure of this function in terms of returning states works and doesn't arm early for some reason 
+      end
+    end
+
     arming:arm()
 
-    if (rc:get_pwm(rc_channel_E) > PWM_HIGH) and arming:is_armed() then
-        gcs:send_text(0, "Switching stages") 
+    if arming:is_armed() then
+        --gcs:send_text(0, "Switching stages") 
         state = state + 1
-
     end     
 
     return state 
@@ -155,13 +180,14 @@ end
 function released() --figure this out, should have altitude readings? This state is also kind of sloppy 
     gcs:send_text(0, "Released Stage")
 
-    if not arming:is_armed() then --ensures drone is still armed 
+    if not arming:is_armed() then --ensures drone is still armed, don't think this check is necessary but could be good to have
         arming:arm()
     end
 
-    if arming:is_armed() then -- This will need to be changed once cube mission incorporated 
-        state = state + 1 --once cube mission integrated, this will switch the into another state that begins the cube mission, auto
-    end
+    if arming:is_armed() then --ensures quad is in guided mode 
+      state = state + 1
+    end 
+    
     return state 
 end
 
@@ -170,13 +196,15 @@ function update()
     --RC Switch Settings--
     if rc:get_pwm(rc_channel_S1) <= PWM_LOW and rc:get_pwm(rc_channel_S2) <= PWM_LOW then --reset switch 
         state = 1; --resets state machine
+        firstRun = true
     end
 
     --Script for State Machine Begins--
-    if vehicle:get_mode() ~= THROW_MODE then --check that vehicle is in throw mode 
+    if vehicle:get_mode() ~= THROW_MODE and state < 6 then --check that vehicle is in throw mode if not in release() or cube missison 
         vehicle:set_mode(THROW_MODE) 
+    end
     
-    elseif rc:get_pwm(rc_channel_S1) >= PWM_HIGH then --check syntax
+    if rc:get_pwm(rc_channel_S1) >= PWM_HIGH then --check syntax, changed from elseif after throwmode check to if 
 
         --State Machine--
         if state == 1 then 
@@ -192,7 +220,8 @@ function update()
         elseif state == 6 then --6 is released                
             released()
         elseif state == 7 then
-            gcs:send_text(0, "Test Complete")
+            gcs:send_text(0, "End of Test")
+        
         end
 
     elseif (rc:get_pwm(rc_channel_S1) > 1300 and rc:get_pwm(rc_channel_S1) < 1600) then
@@ -204,12 +233,12 @@ function update()
     return update, 1000
 end 
 
-rocket_flight() 
-nose_release()
-arm_release()
-check_ready()
-detach()
-released()
+-- rocket_flight()
+-- nose_release()
+-- arm_release()
+-- check_ready()
+-- detach()
+-- released()
 
 
 return update()

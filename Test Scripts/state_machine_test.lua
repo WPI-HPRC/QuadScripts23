@@ -6,8 +6,6 @@ local THROW_MODE = 18
 --RC Channel Values--
 local rc_channel_S1 = 10 --Starts the script: flipped upon launch
 local rc_channel_S2 = 11 --Switches out of rocket_flight(): flipped at apogee 
-local rc_channel_B = 6  --not assigned
-local rc_channel_E = 5 --manual nosecone switch
 local rc_channel_F = 8  --Switches out of nose_release() to arm_release(): flipped upon confirmation of payload parachute inflation
 
 local PWM_HIGH = 1800 --these may need to be reset based on more accurate threshold values
@@ -105,8 +103,9 @@ function update()
     --Script for State Machine Begins--
     if vehicle:get_mode() ~= THROW_MODE then --check that vehicle is in throw mode 
         vehicle:set_mode(THROW_MODE) 
+    end
 
-    elseif rc:get_pwm(rc_channel_S1) >= PWM_HIGH then --check syntax
+    if rc:get_pwm(rc_channel_S1) >= PWM_HIGH then --check syntax
 
         --State Machine--
         if state == 1 then 
