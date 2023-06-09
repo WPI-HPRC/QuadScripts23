@@ -16,7 +16,7 @@ local main_deploy_alt = 1400 --Was originally 400 in Cam's code but may have bee
 --RC Channel Values-- CHANGE
 local rc_channel_S1 = 10 --Starts the state machine: flipped upon launch
 local rc_channel_S2 = 11 --Switches out of rocket_flight(): flipped at apogee 
-local rc_channel_B = 6  --not assigned
+local rc_channel_B = 6  --Manual mode for nosecone switches 
 local rc_channel_F = 8  --Secondary switch for arm release if limit switch fails: flipped upon confirmation of payload parachute inflation, also used for manual mode as well
 local rc_channel_C = 0 --NEEDS TO BE SET, releases the arms upon visual confirmation of parachute deployment
 
@@ -225,7 +225,7 @@ function update()
         end
 
     elseif (rc:get_pwm(rc_channel_S1) > 1300 and rc:get_pwm(rc_channel_S1) < 1600) then
-        if rc_channel_F >= PWM_HIGH then
+        if rc_channel_B >= PWM_HIGH then
             SRV_Channels:set_output_pwm_chan_timeout(servo_channel_nosecone, NOSECONE_PWM, 1000) 
         end
     end
